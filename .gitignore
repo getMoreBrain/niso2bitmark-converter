@@ -2,6 +2,7 @@
 node_modules/
 work/
 tmp/
+temp_zip/
 ignore/
 upload/
 *.log
