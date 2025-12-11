@@ -1,0 +1,8 @@
+# .gitignore
+node_modules/
+work/
+tmp/
+ignore/
+upload/
+*.log
+.env

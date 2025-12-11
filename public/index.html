@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NISO2Bitmark Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body class="font-sans h-screen flex flex-col">
+
+    <!-- Header & Navigation -->
+    <header class="shadow-sm z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center mr-8">
+                        <img src="https://resources.getmorebrain.com/images/gmb-logo-n1.svg" alt="Get More Brain"
+                            class="h-10">
+                        <h1 class="ml-4 text-xl font-bold text-white tracking-tight">Niso2Bitmark Converter</h1>
+                    </div>
+                    <div class="hidden sm:flex sm:space-x-8">
+                        <a href="#" onclick="switchTab('converter')" id="tab-converter"
+                            class="border-primary text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
+                            Konverter
+                        </a>
+                        <a href="#" onclick="switchTab('archive')" id="tab-archive"
+                            class="border-transparent text-gray-400 hover:text-white hover:border-gray-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
+                            Archiv / Explorer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-6" id="main-container">
+
+        <!-- Converter Tab -->
+        <section id="view-converter" class="max-w-4xl mx-auto space-y-8">
+
+            <!-- Stepper -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="w-full flex justify-between relative">
+                    <div class="step-item flex-1 relative text-center z-10" id="step-1-indicator">
+                        <div
+                            class="w-10 h-10 mx-auto bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                            1</div>
+                        <div class="mt-2 text-sm font-medium text-gray-200" data-i18n="step_upload">Upload</div>
+                        <div class="absolute top-5 left-1/2 w-full h-1 bg-gray-700 -z-10"></div>
+                    </div>
+                    <div class="step-item flex-1 relative text-center z-10" id="step-2-indicator">
+                        <div
+                            class="w-10 h-10 mx-auto bg-gray-700 text-gray-400 rounded-full flex items-center justify-center font-bold">
+                            2</div>
+                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_check">Prüfung</div>
+                        <div class="absolute top-5 left-1/2 w-full h-1 bg-gray-700 -z-10"></div>
+                    </div>
+                    <div class="step-item flex-1 relative text-center z-10" id="step-3-indicator">
+                        <div
+                            class="w-10 h-10 mx-auto bg-gray-700 text-gray-400 rounded-full flex items-center justify-center font-bold">
+                            3</div>
+                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_transform">Transform</div>
+                        <div class="absolute top-5 left-1/2 w-full h-1 bg-gray-700 -z-10"></div>
+                    </div>
+                    <div class="step-item flex-1 relative text-center z-10" id="step-4-indicator">
+                        <div
+                            class="w-10 h-10 mx-auto bg-gray-700 text-gray-400 rounded-full flex items-center justify-center font-bold">
+                            4</div>
+                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_preview">Vorschau</div>
+                        <div class="absolute top-5 left-1/2 w-full h-1 bg-gray-700 -z-10"></div>
+                    </div>
+                    <div class="step-item flex-1 relative text-center z-10" id="step-5-indicator">
+                        <div
+                            class="w-10 h-10 mx-auto bg-gray-700 text-gray-400 rounded-full flex items-center justify-center font-bold">
+                            5</div>
+                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_release">Release</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Steps Content -->
+            <div class="bg-[#1f1f1f] shadow-lg rounded-lg p-8 min-h-[400px] border border-gray-800">
+
+                <!-- Step 1: Upload -->
+                <div id="step-1" class="step-content">
+                    <h2 class="text-2xl font-semibold mb-6 text-white" data-i18n="upload_title">Normen-ZIP hochladen
+                    </h2>
+                    <div id="drop-zone"
+                        class="border-2 border-dashed border-gray-600 rounded-lg p-12 text-center hover:border-primary transition cursor-pointer bg-[#2a2a2a] hover:bg-[#333]">
+                        <div class="space-y-4">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
+                                viewBox="0 0 48 48" aria-hidden="true">
+                                <path
+                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="text-sm text-gray-400">
+                                <span class="font-medium text-primary" data-i18n="upload_drag">Datei auswählen</span>
+                                <span data-i18n="upload_drag_suffix">oder hierher ziehen</span>
+                            </div>
+                            <p class="text-xs text-gray-500" data-i18n="upload_hint">ZIP Dateien (<NormID>_....zip)</p>
+                        </div>
+                        <input id="file-upload" type="file" class="hidden" accept=".zip" />
+                    </div>
+                    <div id="upload-status" class="mt-4 text-center hidden"></div>
+                </div>
+
+                <!-- Step 2: Content Check -->
+                <div id="step-2" class="step-content hidden text-center">
+                    <h2 class="text-2xl font-semibold mb-6 text-white" data-i18n="check_title">Inhaltsprüfung</h2>
+                    <div id="check-progress" class="hidden">
+                        <div class="flex justify-center mb-4">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                        <p class="text-gray-300" data-i18n="check_progress">Prüfe Inhalt...</p>
+                    </div>
+                </div>
+
+                <!-- Step 3: Transform (formerly 2) -->
+                <div id="step-3" class="step-content hidden text-center">
+                    <h2 class="text-2xl font-semibold mb-6 text-white" data-i18n="transform_title">Transformation</h2>
+                    <div id="transform-idle">
+                        <button onclick="startTransformation()"
+                            class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-1"
+                            data-i18n="btn_start_transform">
+                            Start Transformation
+                        </button>
+                    </div>
+                    <div id="transform-progress" class="hidden max-w-md mx-auto mt-8 space-y-4">
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-4 mb-4 text-xs flex rounded bg-blue-100">
+                                <div id="progress-bar" style="width:0%"
+                                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500">
+                                </div>
+                            </div>
+                        </div>
+                        <p id="progress-text" class="text-gray-600 font-medium animate-pulse">Initialisiere...</p>
+                        <div class="flex justify-center space-x-4 mt-8">
+                            <!-- Morphing Icon Animation Placeholder -->
+                            <div class="text-4xl">📦 ➡️ 📄 ➡️ 📝</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Preview (formerly 3) -->
+                <div id="step-4" class="step-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-semibold text-white" data-i18n="preview_title">Vorschau</h2>
+                        <button onclick="downloadPreview()"
+                            class="bg-white text-gray-700 border border-gray-300 font-medium py-2 px-4 rounded hover:bg-gray-50"
+                            data-i18n="btn_download_bitmark">
+                            Download .bitmark
+                        </button>
+                    </div>
+                    <div class="w-full h-96 border rounded bg-gray-800 text-gray-100 p-4 font-mono text-sm overflow-auto"
+                        id="preview-code">
+                        Lade Vorschau...
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="goToStep(5)"
+                            class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded"
+                            data-i18n="btn_next">Weiter</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Release (formerly 4) -->
+                <div id="step-5" class="step-content hidden max-w-md mx-auto">
+                    <h2 class="text-2xl font-semibold mb-6 text-center text-white" data-i18n="release_title">Release
+                        bestätigen</h2>
+                    <form id="release-form" onsubmit="handleRelease(event)">
+                        <div class="mb-4">
+                            <label class="block text-gray-300 text-sm font-bold mb-2" for="release-note"
+                                data-i18n="lbl_release_note">
+                                Kurzbeschreibung / Release Note
+                            </label>
+                            <textarea id="release-note"
+                                class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                                rows="3" placeholder="Was hat sich geändert?" oninput="checkReleaseForm()"></textarea>
+                            <p class="text-right text-xs text-gray-500"><span id="char-count">0</span>/15 Zeichen</p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-300 text-sm font-bold mb-2" for="release-name"
+                                data-i18n="lbl_release_name">
+                                Name des Releasers
+                            </label>
+                            <input id="release-name" type="text"
+                                class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                                placeholder="Ihr Name" oninput="checkReleaseForm()">
+                        </div>
+                        <!-- Checkbox removed -->
+                        <div class="flex items-center justify-between">
+                            <button type="button" onclick="goToStep(1); resetState();"
+                                class="text-gray-400 hover:text-white font-bold py-2 px-4 rounded"
+                                data-i18n="btn_cancel">
+                                Abbrechen
+                            </button>
+                            <button type="submit" id="btn-release"
+                                class="bg-gray-600 text-white font-bold py-2 px-6 rounded cursor-not-allowed" disabled
+                                data-i18n="btn_publish">
+                                Veröffentlichen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Archive Tab -->
+        <section id="view-archive" class="max-w-6xl mx-auto hidden space-y-6">
+            <h2 class="text-2xl font-bold text-white">Versionshistorie</h2>
+
+            <div class="flex justify-between items-center bg-[#1f1f1f] p-4 rounded shadow border border-gray-800">
+                <input type="text" id="files-search" placeholder="Suche..."
+                    class="gmb-input border rounded px-4 py-2 w-64 text-white" oninput="filterVersions()">
+                <button onclick="loadVersions()" class="text-primary hover:text-green-400">Aktualisieren</button>
+            </div>
+
+            <div class="bg-[#1f1f1f] shadow overflow-hidden sm:rounded-md border border-gray-800">
+                <table class="min-w-full divide-y divide-gray-800">
+                    <thead class="bg-gray-900">
+                        <tr>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Status</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Norm ID / Version</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Release Note</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Datum</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800" id="versions-list">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 px-6 py-4 rounded shadow-lg text-white transform transition-all duration-300 translate-y-20 opacity-0 hidden z-50">
+        Message
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // State
+        let currentStep = 1;
+        let sessionData = {
+            sessionID: null,
+            filename: null,
+            normID: null
+        };
+        let socket;
+        let i18n = {};
+        let currentLang = 'en';
+
+        // Init
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Detect Lang
+            const browserLang = navigator.language || navigator.userLanguage;
+            currentLang = browserLang.startsWith('de') ? 'de' : 'en';
+
+            // 2. Load Messages
+            try {
+                const res = await fetch('/api/messages');
+                i18n = await res.json();
+                applyTranslations();
+            } catch (e) { console.error("I18n load failed"); }
+
+            setupDragAndDrop();
+            connectWebSocket();
+            loadVersions(); // Preload
+        });
+
+        function t(key, params = {}) {
+            let text = '';
+            // Check flat key first (from legacy if any) or nested 'ui'/'errors'
+            if (i18n.ui && i18n.ui[key]) text = i18n.ui[key][currentLang];
+            else if (i18n.errors && i18n.errors[key]) text = i18n.errors[key][currentLang];
+            else text = key; // Fallback
+
+            // Params replacement
+            Object.keys(params).forEach(k => {
+                text = text.replace(`{${k}}`, params[k]);
+            });
+            return text;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (key) el.innerText = t(key);
+            });
+            // Placeholders
+            if (document.getElementById('files-search')) document.getElementById('files-search').placeholder = t('search_placeholder');
+            if (document.getElementById('release-name')) document.getElementById('release-name').placeholder = t('ph_release_name');
+            if (document.getElementById('release-note')) document.getElementById('release-note').placeholder = t('ph_release_note');
+        }
+
+        // Navigation
+        function switchTab(tab) {
+            document.getElementById('view-converter').classList.add('hidden');
+            document.getElementById('view-archive').classList.add('hidden');
+            document.getElementById('tab-converter').classList.replace('border-primary', 'border-transparent');
+            document.getElementById('tab-archive').classList.replace('border-primary', 'border-transparent');
+            document.getElementById('tab-converter').classList.remove('text-gray-900');
+            document.getElementById('tab-archive').classList.remove('text-gray-900');
+
+            if (tab === 'converter') {
+                document.getElementById('view-converter').classList.remove('hidden');
+                document.getElementById('tab-converter').classList.replace('border-transparent', 'border-primary');
+                document.getElementById('tab-converter').classList.replace('text-gray-400', 'text-white');
+            } else {
+                document.getElementById('view-archive').classList.remove('hidden');
+                document.getElementById('tab-archive').classList.replace('border-transparent', 'border-primary');
+                document.getElementById('tab-archive').classList.replace('text-gray-400', 'text-white');
+                loadVersions();
+            }
+        }
+
+        // Stepper Logic
+        function goToStep(step) {
+            // Hide all contents
+            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+            // Show target
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+
+            // Update indicators
+            for (let i = 1; i <= 5; i++) {
+                const indicator = document.getElementById(`step-${i}-indicator`).querySelector('div');
+
+                if (i <= step) {
+                    indicator.classList.remove('bg-gray-700', 'text-gray-400');
+                    indicator.classList.add('bg-primary', 'text-white');
+                } else {
+                    indicator.classList.remove('bg-primary', 'text-white');
+                    indicator.classList.add('bg-gray-700', 'text-gray-400');
+                }
+            }
+            currentStep = step;
+        }
+
+        function resetState() {
+            sessionData = { sessionID: null, filename: null, normID: null };
+            document.getElementById('upload-status').innerHTML = '';
+            document.getElementById('upload-status').classList.add('hidden');
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('transform-idle').classList.remove('hidden');
+            document.getElementById('transform-progress').classList.add('hidden');
+            document.getElementById('preview-code').innerText = '';
+            document.getElementById('release-note').value = '';
+            document.getElementById('release-name').value = '';
+            // document.getElementById('release-confirm').checked = false;
+        }
+
+        // Step 1: Upload
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-upload');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-primary', 'bg-blue-50');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary', 'bg-blue-50');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary', 'bg-blue-50');
+                if (e.dataTransfer.files.length) {
+                    handleFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+        }
+
+        async function handleFileUpload(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusDiv = document.getElementById('upload-status');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = `<span class="text-gray-500">Validating ${file.name}...</span>`;
+
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (res.ok) {
+                    sessionData.filename = data.filename;
+                    sessionData.normID = data.normID;
+                    sessionData.sessionID = data.sessionID;
+
+                    statusDiv.innerHTML = `<div class="text-green-600 font-bold">✅ ${file.name}</div>`;
+                    showToast(t('upload_success'), 'success');
+
+                    // Auto-start check content
+                    setTimeout(() => {
+                        goToStep(2);
+                        checkContent();
+                    }, 500);
+
+                } else {
+                    let errorHtml = `<div class="text-red-500 font-bold mb-2">❌ ${t('error_prefix')} ${data.message}</div>`;
+                    if (data.validIDs && Array.isArray(data.validIDs)) {
+                        errorHtml += `<div class="text-left mt-4 border border-gray-700 rounded p-4 bg-[#1f1f1f]"><p class="text-sm font-semibold mb-2 text-gray-300">${t('valid_ids')}</p><div class="grid grid-cols-5 gap-2 text-xs text-gray-400 max-h-64 overflow-y-auto">`;
+                        data.validIDs.forEach(id => {
+                            errorHtml += `<div class="bg-gray-800 p-2 rounded border border-gray-700 truncate hover:text-white" title="${id}">${id}</div>`;
+                        });
+                        errorHtml += '</div></div>';
+                    }
+                    statusDiv.innerHTML = errorHtml;
+                    showToast(data.message + (data.validIDs ? " (Details)" : ""), 'error');
+                }
+            } catch (e) {
+                statusDiv.innerHTML = `<div class="text-red-600 font-bold">❌ Netzwerkfehler</div>`;
+            }
+        }
+
+        // Step 2: Content Check
+        async function checkContent() {
+            const progressDiv = document.getElementById('check-progress');
+            progressDiv.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/check-content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionID: sessionData.sessionID,
+                        filename: sessionData.filename,
+                        normID: sessionData.normID
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(t('check_success'), 'success');
+                    setTimeout(() => goToStep(3), 1000);
+                } else {
+                    let msg = data.message;
+                    if (data.messageKey) {
+                        msg = t(data.messageKey, data.params || {});
+                    }
+
+                    progressDiv.innerHTML = `<div class="text-red-500 font-bold">❌ ${msg}</div>`;
+                    showToast(msg, 'error');
+                }
+
+            } catch (e) {
+                showToast(t('network_error'), 'error');
+            }
+        }
+
+        // Step 3: Transform (formerly 2)
+        async function startTransformation() {
+            document.getElementById('transform-idle').classList.add('hidden');
+            document.getElementById('transform-progress').classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/transform', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sessionData)
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.message);
+                }
+            } catch (e) {
+                showToast('Fehler beim Starten der Transformation: ' + e.message, 'error');
+                document.getElementById('transform-idle').classList.remove('hidden');
+                document.getElementById('transform-progress').classList.add('hidden');
+            }
+        }
+
+        // WebSocket
+        function connectWebSocket() {
+            socket = new WebSocket(`ws://${window.location.host}`);
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'STATUS') {
+                    const bar = document.getElementById('progress-bar');
+                    const text = document.getElementById('progress-text');
+
+                    bar.style.width = data.progress + '%';
+                    text.innerText = data.message;
+
+                    if (data.completed) {
+                        setTimeout(() => {
+                            showToast(t('check_success'), 'success'); // Reuse success msg or new one 'Transformation Done'
+                            loadPreview();
+                            goToStep(4);
+                        }, 500);
+                    }
+                } else if (data.type === 'ERROR') {
+                    showToast('Transformation fehlgeschlagen: ' + data.message, 'error');
+                }
+            };
+        }
+
+        // Step 3: Preview
+        async function loadPreview() {
+            try {
+                const res = await fetch(`/api/preview/${sessionData.sessionID}/${sessionData.normID}`);
+                if (res.ok) {
+                    const text = await res.text();
+                    document.getElementById('preview-code').innerText = text;
+                }
+            } catch (e) {
+                document.getElementById('preview-code').innerText = "Fehler beim Laden der Vorschau.";
+            }
+        }
+
+        function downloadPreview() {
+            // In current API there is no direct "download single file" unless we use the preview route.
+            // We can trigger download via a Blob.
+            const text = document.getElementById('preview-code').innerText;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sessionData.normID}.bitmark`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Step 4: Release
+        function checkReleaseForm() {
+            const note = document.getElementById('release-note').value;
+            const name = document.getElementById('release-name').value;
+            // const confirm = document.getElementById('release-confirm').checked;
+            const count = note.length;
+            const countEl = document.getElementById('char-count');
+            const btn = document.getElementById('btn-release');
+
+            countEl.innerText = count;
+            countEl.style.color = count < 15 ? 'red' : 'green';
+
+            // Changed: Removed confirm check
+            if (count >= 15 && name.trim().length > 0) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.add('bg-accent', 'hover:bg-green-600');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-accent', 'hover:bg-green-600');
+            }
+        }
+
+        async function handleRelease(e) {
+            e.preventDefault();
+            const note = document.getElementById('release-note').value;
+            const name = document.getElementById('release-name').value;
+            const confirm = document.getElementById('release-confirm').checked;
+
+            try {
+                const res = await fetch('/api/release', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionID: sessionData.sessionID,
+                        releaseNote: note,
+                        releaseName: name,
+                        label: ''
+                        // confirm: confirm // Removed
+                    })
+                });
+
+                if (res.ok) {
+                    showToast('Version erfolgreich veröffentlicht!', 'success');
+                    switchTab('archive');
+                    resetState();
+                    goToStep(1);
+                } else {
+                    const data = await res.json();
+                    showToast('Fehler: ' + data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Verbindungsfehler', 'error');
+            }
+        }
+
+        // Archive
+        let versionsCache = [];
+
+        async function loadVersions() {
+            try {
+                const res = await fetch('/api/versions');
+                versionsCache = await res.json();
+                renderVersions(versionsCache);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderVersions(list) {
+            const tbody = document.getElementById('versions-list');
+            tbody.innerHTML = '';
+
+            list.forEach(ver => {
+                // Parse Meta
+                let label = '';
+                let note = '';
+                let date = '';
+                let releaser = '';
+
+                if (ver.meta) {
+                    const lines = ver.meta.split('\n');
+                    lines.forEach(line => {
+                        if (line.startsWith('Timestamp:')) date = line.replace('Timestamp:', '').trim();
+                        if (line.startsWith('Label:')) label = line.replace('Label:', '').trim();
+                        if (line.startsWith('ReleaseNote:')) note = line.replace('ReleaseNote:', '').trim();
+                        if (line.startsWith('Releaser:')) releaser = line.replace('Releaser:', '').trim();
+                    });
+                } else {
+                    date = ver.id.replace('version_', '');
+                }
+
+                // Format display date
+                try {
+                    const d = new Date(date);
+                    if (!isNaN(d.getTime())) date = d.toLocaleString('de-CH');
+                } catch (e) { }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ver.type === 'current' ? 'bg-green-900 text-green-200' : 'bg-gray-700 text-gray-300'}">
+                            ${ver.type === 'current' ? 'Live' : 'Archiv'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-medium">
+                        ${ver.id}
+                        ${label ? `<div class="text-xs text-gray-500">${label}</div>` : ''}
+                        ${releaser ? `<div class="text-xs text-gray-500">von ${releaser}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-400 max-w-xs truncate" title="${note}">
+                        ${note}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${date}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex flex-col items-end space-y-1">
+                            <a href="/api/download/${ver.id}" class="text-primary hover:text-green-300 mr-4" title="${t('download')} (Full)">${t('download')} (All)</a>
+                            ${ver.books && ver.books.length > 0 ? ver.books.map(book => `
+                                <a href="/api/download/${ver.id}/${book}" class="text-xs text-gray-400 hover:text-white mr-4" title="${t('download')} ${book}">
+                                    📘 ${book}
+                                </a>
+                            `).join('') : ''}
+                        </div>
+                        
+                        ${ver.type !== 'current' ? `<div class="mt-2"><button onclick="handleRollback('${ver.id}')" class="text-red-400 hover:text-red-300">${t('rollback')}</button></div>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function handleRollback(id) {
+            if (!confirm(`Möchten Sie wirklich auf Version ${id} zurückrollen? Alle neueren Versionen werden archiviert (invalidiert).`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/rollback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetVersionId: id })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast('Rollback erfolgreich!', 'success');
+                    loadVersions();
+                } else {
+                    showToast('Fehler: ' + data.message, 'error');
+                }
+            } catch (e) {
+                showToast('Verbindungsfehler', 'error');
+            }
+        }
+
+        function filterVersions() {
+            const query = document.getElementById('files-search').value.toLowerCase();
+            const filtered = versionsCache.filter(v =>
+                v.id.toLowerCase().includes(query) ||
+                (v.meta && v.meta.toLowerCase().includes(query))
+            );
+            renderVersions(filtered);
+        }
+
+        // Toast Helper
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('hidden', 'translate-y-20', 'opacity-0', 'bg-red-500', 'bg-green-500', 'bg-gray-800');
+
+            if (type === 'error') toast.classList.add('bg-red-500');
+            else if (type === 'success') toast.classList.add('bg-green-500');
+            else toast.classList.add('bg-gray-800');
+
+            // Slide in
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 10);
+
+            // Hide after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+    </script>
+</body>
+
+</html>

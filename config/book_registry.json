@@ -1,0 +1,207 @@
+{
+  "SN411000_2025_de": {
+    "gmbdocid": "e-niederspannungs-installationsn_kwx7vzjevxay",
+    "parse_type": "nin",
+    "lang": "de"
+  },
+  "SN411000_2025_fr": {
+    "gmbdocid": "e-norme-sur-les-installations-ba_wipkajri2n97",
+    "parse_type": "nin",
+    "lang": "fr"
+  },
+  "SN411000_2025_it": {
+    "gmbdocid": "e-norma-per-le-installazioni-a-b_jexvif2cx1up",
+    "parse_type": "nin",
+    "lang": "it"
+  },
+  "SN414022_2024_de": {
+    "gmbdocid": "e-sn-414022-2024de_lo81mvz63ywt",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN414022_2024_fr": {
+    "gmbdocid": "e-sn-414022-2024fr_ftgt6zlyzvt_",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SN414022_2024_it": {
+    "gmbdocid": "e-sn-414022-2024it_37t0yiydqwox",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SN414113_2024_de": {
+    "gmbdocid": "e-sn-414113-2024de__d-v3bgumucz",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN414113_2024_fr": {
+    "gmbdocid": "e-sn-414113-2024_x6anjeug69li",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SN414113_2024_it": {
+    "gmbdocid": "e-sn-414113-2024it_jqvuqkpub253",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SN440100_2019_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN440100_2019_fr": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SN440100_2019_it": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SN441011-1_2019_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN441011-1_2019_en": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "en"
+  },
+  "SN441011-2-1_2021_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN441011-2-1_2021_en": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "en"
+  },
+  "SN441011-2-2_2019_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SN441011-2-2_2019_en": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "en"
+  },
+  "SN441011-2-3_2019_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG480761_2019_de": {
+    "gmbdocid": "e-sng-480761-2019de_8l1g0uwuacag",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG480761_2019_fr": {
+    "gmbdocid": "e-sng-480761-2019_q-eravuyvbio",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNG480761_2019_it": {
+    "gmbdocid": "e-sng-480761-2019_x7drf1o-xekt",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SNG481449_2023_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG482638_2023_de": {
+    "gmbdocid": "e-sng-482638-2023de_wzibwkt7zgtp",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG482638_2023_fr": {
+    "gmbdocid": "e-sng-482638-2023fr_jy0fc99mydzh",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNG482638_2023_it": {
+    "gmbdocid": "e-sng-482638-2023it_7il5qqvw6fkw",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SNG483127_2022_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG483127_2022_fr": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNG483127_2022_it": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SNG483755_2023_de": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNG483755_2023_fr": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNG483755_2023_it": {
+    "gmbdocid": "",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SNG491000_YYYY_de": {
+    "gmbdocid": "e-electrosuisse-sng_491000_de",
+    "parse_type": "sng",
+    "lang": "de"
+  },
+  "SNG491000_YYYY_fr": {
+    "gmbdocid": "e-electrosuisse-sng_491000_fr",
+    "parse_type": "sng",
+    "lang": "fr"
+  },
+  "SNG491000_YYYY_it": {
+    "gmbdocid": "e-electrosuisse-sng_491000_it",
+    "parse_type": "sng",
+    "lang": "it"
+  },
+  "SNR460712_2018_de": {
+    "gmbdocid": "e-snr-460712-2018de__f7ws9yy7drl",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNR460712_2018_fr": {
+    "gmbdocid": "e-snr-460712-2018fr_jmlw3hxh0lxl",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNR460712_2018_it": {
+    "gmbdocid": "e-snr-460712-2018it_viwjzonh7x7v",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  },
+  "SNR461439_2018_de": {
+    "gmbdocid": "e-snr-461439-2018de_kvmbg4tv2zbt",
+    "parse_type": "no_sub-part",
+    "lang": "de"
+  },
+  "SNR461439_2018_fr": {
+    "gmbdocid": "e-snr-461439-2018fr_yg0wqpvoldxx",
+    "parse_type": "no_sub-part",
+    "lang": "fr"
+  },
+  "SNR461439_2018_it": {
+    "gmbdocid": "e-snr-461439-2018it_xq9zuyit7jo1",
+    "parse_type": "no_sub-part",
+    "lang": "it"
+  }
+}

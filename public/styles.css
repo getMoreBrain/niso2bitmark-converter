@@ -1,0 +1,61 @@
+:root {
+    --color-bg-sidebar: #050505;
+    --color-bg-main: #121212;
+    --color-primary: #83c635;
+    /* GMB Green approx */
+    --color-text-main: #ffffff;
+    --color-text-muted: #9ca3af;
+}
+
+.bg-primary {
+    background-color: var(--color-primary);
+}
+
+.text-primary {
+    color: var(--color-primary);
+}
+
+body {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+}
+
+/* Stepper Connector */
+.step-connector::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 100%;
+    height: 2px;
+    background-color: #374151;
+    /* Darker line */
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+.step-connector:last-child::after {
+    display: none;
+}
+
+.step-active .step-connector::after {
+    background-color: var(--color-primary);
+}
+
+.gmb-input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: white;
+}
+
+.gmb-input:focus {
+    border-color: var(--color-primary);
+    outline: 2px solid var(--color-primary);
+    outline-offset: -1px;
+}
+
+/* Sidebar/Header simulation mimicking the screenshot nicely */
+header {
+    background-color: var(--color-bg-sidebar);
+    border-bottom: 1px solid #333;
+}

@@ -1,0 +1,330 @@
+{
+    "ui": {
+        "title": {
+            "de": "Niso2Bitmark Converter",
+            "en": "Niso2Bitmark Converter",
+            "fr": "Convertisseur Niso2Bitmark",
+            "it": "Convertitore Niso2Bitmark"
+        },
+        "tab_converter": {
+            "de": "Konverter",
+            "en": "Converter",
+            "fr": "Convertisseur",
+            "it": "Convertitore"
+        },
+        "tab_archive": {
+            "de": "Archiv / Explorer",
+            "en": "Archive / Explorer",
+            "fr": "Archive / Explorateur",
+            "it": "Archivio / Esplora"
+        },
+        "step_upload": {
+            "de": "Upload",
+            "en": "Upload",
+            "fr": "Téléverser",
+            "it": "Caricamento"
+        },
+        "step_check": {
+            "de": "Prüfung",
+            "en": "Check",
+            "fr": "Vérifier",
+            "it": "Controllo"
+        },
+        "step_transform": {
+            "de": "Konvertierung",
+            "en": "Conversion",
+            "fr": "Conversion",
+            "it": "Conversione"
+        },
+        "step_preview": {
+            "de": "Vorschau",
+            "en": "Preview",
+            "fr": "Aperçu",
+            "it": "Anteprima"
+        },
+        "step_release": {
+            "de": "Release",
+            "en": "Release",
+            "fr": "Publication",
+            "it": "Rilascio"
+        },
+        "upload_title": {
+            "de": "Normen-ZIP hochladen",
+            "en": "Upload Standard ZIP",
+            "fr": "Téléverser ZIP standard",
+            "it": "Carica ZIP standard"
+        },
+        "upload_drag": {
+            "de": "Datei auswählen",
+            "en": "Select file",
+            "fr": "Sélectionner le fichier",
+            "it": "Seleziona file"
+        },
+        "upload_drag_suffix": {
+            "de": "oder hierher ziehen",
+            "en": "or drag here",
+            "fr": "ou faites glisser ici",
+            "it": "o trascina qui"
+        },
+        "upload_hint": {
+            "de": "ZIP Dateien (<NormID>_....zip)",
+            "en": "ZIP files (<NormID>_....zip)",
+            "fr": "Fichiers ZIP (<NormID>_....zip)",
+            "it": "File ZIP (<NormID>_....zip)"
+        },
+        "check_title": {
+            "de": "Inhaltsprüfung",
+            "en": "Content Check",
+            "fr": "Vérification du contenu",
+            "it": "Controllo del contenuto"
+        },
+        "check_progress": {
+            "de": "Prüfe Inhalt...",
+            "en": "Checking content...",
+            "fr": "Vérification du contenu...",
+            "it": "Controllo del contenuto..."
+        },
+        "check_success": {
+            "de": "Inhalt erfolgreich geprüft!",
+            "en": "Content verified successfully!",
+            "fr": "Contenu vérifié avec succès!",
+            "it": "Contenuto verificato con successo!"
+        },
+        "transform_title": {
+            "de": "Konvertierung",
+            "en": "Conversion",
+            "fr": "Conversion",
+            "it": "Conversione"
+        },
+        "btn_start_transform": {
+            "de": "Konvertierung starten",
+            "en": "Start Conversion",
+            "fr": "Démarrer la conversion",
+            "it": "Avvia conversione"
+        },
+        "preview_title": {
+            "de": "Vorschau",
+            "en": "Preview",
+            "fr": "Aperçu",
+            "it": "Anteprima"
+        },
+        "btn_download_bitmark": {
+            "de": "Download .bitmark",
+            "en": "Download .bitmark",
+            "fr": "Télécharger .bitmark",
+            "it": "Scarica .bitmark"
+        },
+        "btn_next": {
+            "de": "Weiter",
+            "en": "Next",
+            "fr": "Suivant",
+            "it": "Avanti"
+        },
+        "release_title": {
+            "de": "Release bestätigen",
+            "en": "Confirm Release",
+            "fr": "Confirmer la publication",
+            "it": "Conferma rilascio"
+        },
+        "lbl_release_note": {
+            "de": "Kurzbeschreibung / Release Note",
+            "en": "Short description / Release Note",
+            "fr": "Description courte / Note de version",
+            "it": "Breve descrizione / Nota di rilascio"
+        },
+        "ph_release_note": {
+            "de": "Was hat sich geändert?",
+            "en": "What changed?",
+            "fr": "Qu'est-ce qui a changé?",
+            "it": "Cosa è cambiato?"
+        },
+        "lbl_release_name": {
+            "de": "Name des Releasers",
+            "en": "Releaser Name",
+            "fr": "Nom du responsable",
+            "it": "Nome del rilasciatore"
+        },
+        "ph_release_name": {
+            "de": "Ihr Name",
+            "en": "Your Name",
+            "fr": "Votre nom",
+            "it": "Il tuo nome"
+        },
+        "lbl_release_confirm": {
+            "de": "Ich bestätige die Richtigkeit des Release",
+            "en": "I confirm the correctness of the release",
+            "fr": "Je confirme l'exactitude de la version",
+            "it": "Confermo la correttezza del rilascio"
+        },
+        "btn_cancel": {
+            "de": "Abbrechen",
+            "en": "Cancel",
+            "fr": "Annuler",
+            "it": "Annulla"
+        },
+        "btn_publish": {
+            "de": "Veröffentlichen",
+            "en": "Publish",
+            "fr": "Publier",
+            "it": "Pubblica"
+        },
+        "archive_title": {
+            "de": "Versionshistorie",
+            "en": "Version History",
+            "fr": "Historique des versions",
+            "it": "Cronologia versioni"
+        },
+        "search_placeholder": {
+            "de": "Suche...",
+            "en": "Search...",
+            "fr": "Recherche...",
+            "it": "Cerca..."
+        },
+        "btn_refresh": {
+            "de": "Aktualisieren",
+            "en": "Refresh",
+            "fr": "Rafraîchir",
+            "it": "Aggiorna"
+        },
+        "th_status": {
+            "de": "Status",
+            "en": "Status",
+            "fr": "Statut",
+            "it": "Stato"
+        },
+        "th_id": {
+            "de": "Norm ID / Version",
+            "en": "Norm ID / Version",
+            "fr": "ID Norme / Version",
+            "it": "ID Norma / Versione"
+        },
+        "th_note": {
+            "de": "Release Note",
+            "en": "Release Note",
+            "fr": "Note de version",
+            "it": "Nota di rilascio"
+        },
+        "th_date": {
+            "de": "Datum",
+            "en": "Date",
+            "fr": "Date",
+            "it": "Data"
+        },
+        "th_action": {
+            "de": "Aktion",
+            "en": "Action",
+            "fr": "Action",
+            "it": "Azione"
+        },
+        "status_live": {
+            "de": "Live",
+            "en": "Live",
+            "fr": "En direct",
+            "it": "Live"
+        },
+        "status_archive": {
+            "de": "Archiv",
+            "en": "Archive",
+            "fr": "Archive",
+            "it": "Archivio"
+        },
+        "by": {
+            "de": "von",
+            "en": "by",
+            "fr": "par",
+            "it": "da"
+        },
+        "download": {
+            "de": "Download",
+            "en": "Download",
+            "fr": "Télécharger",
+            "it": "Scarica"
+        },
+        "rollback": {
+            "de": "Rollback",
+            "en": "Rollback",
+            "fr": "Restauration",
+            "it": "Rollback"
+        }
+    },
+    "errors": {
+        "upload_success": {
+            "de": "Upload erfolgreich",
+            "en": "Upload successful",
+            "fr": "Téléversement réussi",
+            "it": "Caricamento riuscito"
+        },
+        "validating": {
+            "de": "Validiere",
+            "en": "Validating",
+            "fr": "Validation",
+            "it": "Validazione"
+        },
+        "network_error": {
+            "de": "Netzwerkfehler",
+            "en": "Network error",
+            "fr": "Erreur réseau",
+            "it": "Errore di rete"
+        },
+        "error_prefix": {
+            "de": "Fehler: ",
+            "en": "Error: ",
+            "fr": "Erreur : ",
+            "it": "Errore: "
+        },
+        "valid_ids": {
+            "de": "Gültige NormIDs:",
+            "en": "Valid NormIDs:",
+            "fr": "NormIDs valides:",
+            "it": "NormIDs validi:"
+        },
+        "transform_fail": {
+            "de": "Transformation fehlgeschlagen: ",
+            "en": "Transformation failed: ",
+            "fr": "Échec de la conversion: ",
+            "it": "Conversione fallita: "
+        },
+        "release_success": {
+            "de": "Version erfolgreich veröffentlicht!",
+            "en": "Version successfully published!",
+            "fr": "Version publiée avec succès!",
+            "it": "Versione pubblicata con successo!"
+        },
+        "release_fail": {
+            "de": "Release fehlgeschlagen",
+            "en": "Release failed",
+            "fr": "Échec de la publication",
+            "it": "Rilascio fallito"
+        },
+        "rollback_success": {
+            "de": "Rollback erfolgreich!",
+            "en": "Rollback successful!",
+            "fr": "Restauration réussie!",
+            "it": "Rollback riuscito!"
+        },
+        "rollback_confirm": {
+            "de": "Möchten Sie wirklich auf Version {id} zurückrollen? Alle neueren Versionen werden archiviert (invalidiert).",
+            "en": "Do you really want to rollback to version {id}? All newer versions will be archived (invalidated).",
+            "fr": "Voulez-vous vraiment revenir à la version {id} ? Toutes les versions plus récentes seront archivées (invalidées).",
+            "it": "Vuoi davvero tornare alla versione {id}? Tutte le versioni più recenti saranno archiviate (invalidati)."
+        },
+        "check_fail_xml_dir": {
+            "de": "ZIP muss Verzeichnis '{dir}' enthalten (case-insensitive)",
+            "en": "ZIP must contain directory '{dir}' (case-insensitive)",
+            "fr": "Le ZIP doit contenir le répertoire '{dir}' (insensible à la casse)",
+            "it": "Il ZIP deve contenere la cartella '{dir}' (case-insensitive)"
+        },
+        "check_fail_inner_dir": {
+            "de": "Kein eindeutiges inneres Verzeichnis in '{dir}' gefunden.",
+            "en": "No unique inner directory found in '{dir}'.",
+            "fr": "Aucun répertoire interne unique trouvé dans '{dir}'.",
+            "it": "Nessuna cartella interna unica trovata in '{dir}'."
+        },
+        "check_fail_files": {
+            "de": "Verzeichnis '{dir}' muss 'content.xml' und 'metadata.xml' enthalten.",
+            "en": "Directory '{dir}' must contain 'content.xml' and 'metadata.xml'.",
+            "fr": "Le répertoire '{dir}' doit contenir 'content.xml' et 'metadata.xml'.",
+            "it": "La cartella '{dir}' deve contenere 'content.xml' e 'metadata.xml'."
+        }
+    }
+}
