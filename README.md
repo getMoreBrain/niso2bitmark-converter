@@ -57,6 +57,17 @@ The application maintains a strict versioning system in the `versions/` director
     -   Contains the full state of books at that time.
 -   **Rollback**: Allows restoring any archived version to `current`. The displaced `current` is archived.
 
+## Global Data & Integrity IMPORTANT!
+To ensure consistent cross-referencing between different standards (Normen), the system maintains global mapping files. These are critical for the correct functioning of links and references across the entire content set. Because these files contain references for *all* standards, all standards must be treated as a single cohesive package and versioned together.
+
+### `customer2AnchorIdMappings.json`
+-   **Purpose**: Contains **ALL** references between all standards (Normen).
+-   **Significance**: Stores the mapping from Customer IDs (source XML) to Bitmark Anchor IDs. Since this file aggregates references from all books, it binds the versioning of all standards together.
+
+### `xpublisherDocId2GmbDocId.json`
+-   **Purpose**: Maps Xpublisher Document IDs to GMB Document IDs across all standards.
+-   **Significance**: A single standard (Norm) consists of multiple Xpublisher Doc IDs (n:1 mapping). This file ensures that any Xpublisher ID can be correctly resolved to its corresponding GMB Document ID within the global context.
+
 ## Architecture
 
 ### Backend
@@ -68,7 +79,7 @@ The application maintains a strict versioning system in the `versions/` director
 -   **File System**: heavily relies on `fs-extra` for file manipulation (move, copy, ensureDir).
 
 ### Modules
-### Modules
+
 -   **`src/server.js`**: Application entry point. Handles HTTP routes, WebSocket connections, and directory management.
 -   **`src/Converter.js`**: Orchestrates a single conversion session. Initializes parsers and transformers.
 
