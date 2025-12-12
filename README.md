@@ -68,12 +68,33 @@ The application maintains a strict versioning system in the `versions/` director
 -   **File System**: heavily relies on `fs-extra` for file manipulation (move, copy, ensureDir).
 
 ### Modules
+### Modules
 -   **`src/server.js`**: Application entry point. Handles HTTP routes, WebSocket connections, and directory management.
 -   **`src/Converter.js`**: Orchestrates a single conversion session. Initializes parsers and transformers.
--   **`src/transformer/NINParser.js`**: The XML parsing engine.
--   **`src/transformer/BitmarkTransformer.js`**: The core logic for Bitmark syntax generation.
--   **`src/transformer/HtmlTable2PNG.js`**: Graphic generation utility for tables.
--   **`src/transformer/XpublisherDocId2GmbDocMapper.js`**: Handles ID mapping between systems.
+
+### Transformer Modules
+All modules located in `src/transformer/`:
+
+-   **`AnchorIdBuilder.js`**: Helper for building anchor IDs.
+-   **`BitmarkExtractor.js`**: Logic for extracting Bitmark content.
+-   **`BitmarkIdMerge.js`**: (Empty/Placeholder).
+-   **`BitmarkInlineGraphicBuilder.js`**: Handling inline graphics via `BitmarkTemplates.inlineGraphic`.
+-   **`BitmarkLegendBuilder.js`**: Building legends.
+-   **`BitmarkTemplates.js`**: Templates for Bitmark generation (headers, footers, etc.).
+-   **`BitmarkTransformer.js`**: The core logic for Bitmark syntax generation.
+-   **`CustomerId2AnchorIdFullMapper.js`**: Extended mapping from Customer IDs to Anchor IDs.
+-   **`CustomerId2AnchorIdMapper.js`**: Mapping Customer IDs to Anchor IDs.
+-   **`HtmlTable2PNG.js`**: Graphic generation utility for HTML tables (using Puppeteer).
+-   **`IDMapper.js`**: General ID mapping utility.
+-   **`MML2HTML.js`**: MathML to HTML conversion utility.
+-   **`MML2LaTeX.js`**: MathML to LaTeX conversion utility.
+-   **`MML2SVG.js`**: MathML to SVG conversion utility.
+-   **`MappingStore.js`**: Store for managing various ID mappings.
+-   **`NINParser.js`**: The XML parsing engine (SAX-based).
+-   **`PrivateChars.js`**: Handling of private/special characters.
+-   **`XpublisherDocId2GmbDocMapper.js`**: Handles ID mapping between Xpublisher and GMB.
+-   **`app.js`**: Standalone entry point / CLI runner for the transformer.
+-   **`utils.js`**: Shared utility functions.
 
 ### Technology Stack
 -   **Core**: Node.js, Express.
@@ -109,10 +130,33 @@ The application maintains a strict versioning system in the `versions/` director
 │   ├── book_registry.json  # Whitelist of valid Book IDs (NormIDs)
 │   └── messages.json       # Localization strings (i18n)
 ├── public/                 # Frontend assets (HTML, CSS, JS)
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
 ├── src/                    # Source Code
 │   ├── server.js           # Main Server
 │   ├── Converter.js        # Transformation Manager
 │   ├── transformer/        # Logic for XML->Bitmark conversion
+│   │   ├── AnchorIdBuilder.js
+│   │   ├── BitmarkExtractor.js
+│   │   ├── BitmarkIdMerge.js
+│   │   ├── BitmarkInlineGraphicBuilder.js
+│   │   ├── BitmarkLegendBuilder.js
+│   │   ├── BitmarkTemplates.js
+│   │   ├── BitmarkTransformer.js
+│   │   ├── CustomerId2AnchorIdFullMapper.js
+│   │   ├── CustomerId2AnchorIdMapper.js
+│   │   ├── HtmlTable2PNG.js
+│   │   ├── IDMapper.js
+│   │   ├── MML2HTML.js
+│   │   ├── MML2LaTeX.js
+│   │   ├── MML2SVG.js
+│   │   ├── MappingStore.js
+│   │   ├── NINParser.js
+│   │   ├── PrivateChars.js
+│   │   ├── XpublisherDocId2GmbDocMapper.js
+│   │   ├── app.js
+│   │   └── utils.js
 │   └── tests/              # Unit/Integration tests
 ├── upload/                 # Temporary storage for uploads
 ├── work/                   # Staging area for active sessions
