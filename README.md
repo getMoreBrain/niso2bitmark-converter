@@ -159,6 +159,8 @@ All modules located in `src/transformer/`:
 │   │   └── utils.js
 │   └── tests/              # Unit/Integration tests
 ├── upload/                 # Temporary storage for uploads
+├── tmp/                    # Temporary storage for intermediate files
+│   └── <SessionID>/        # Sandbox for specific user session
 ├── work/                   # Staging area for active sessions
 │   └── <SessionID>/        # Sandbox for specific user session
 ├── versions/               # Version Control System
