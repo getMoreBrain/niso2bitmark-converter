@@ -6,6 +6,7 @@ const AdmZip = require('adm-zip');
 const WebSocket = require('ws');
 const cors = require('cors');
 const http = require('http');
+const Converter = require('./Converter');
 
 const app = express();
 const port = 3080;
@@ -71,6 +72,9 @@ const getRegistry = () => {
     }
 };
 
+// Global Lock for Transformation
+let activeTransformation = null;
+
 // --- Routes ---
 
 // Upload Setup
@@ -83,61 +87,32 @@ const upload = multer({ storage: storage });
 app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" });
+            return res.status(400).json({ messageKey: "no_file_uploaded", message: "No file uploaded" });
         }
 
-        const filename = req.file.originalname; // e.g., SN411000_2025_de_Label.zip
-        const registry = getRegistry();
-        const registryKeys = Object.keys(registry);
+        const filename = req.file.originalname;
 
-        // 1. Identify NormID
-        let matchedKey = null;
-        for (const key of registryKeys) {
-            if (filename.startsWith(key)) {
-                const rest = filename.slice(key.length);
-                if (rest === '.zip' || rest.startsWith('_')) {
-                    matchedKey = key;
-                    break;
-                }
-            }
-        }
-
-        if (!matchedKey) {
-            await fs.remove(req.file.path);
-            return res.status(400).json({
-                message: `Filename does not start with a valid NormID.`,
-                validIDs: registryKeys
-            });
-        }
-
-        // 2. Validate ZIP Content
-        const zip = new AdmZip(req.file.path);
-        const zipEntries = zip.getEntries();
-        const entryNames = zipEntries.map(e => e.entryName);
-
-        // Expect directory: <NormID>_XML
-        const expectedDir = `${matchedKey}_XML`;
-        // Case insensitive check for directory existence
-        const hasXmlDir = entryNames.some(name => name.toLowerCase().startsWith(expectedDir.toLowerCase() + '/'));
-
-        if (!hasXmlDir) {
-            await fs.remove(req.file.path);
-            return res.status(400).json({ message: `ZIP must contain directory '${expectedDir}' (case-insensitive)` });
-        }
-
-        // Optional: PDF check (not strict failure, just logging or ignoring)
-
+        // Simple success response - validation moves to check-content
+        const { v4: uuidv4 } = require('uuid');
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const formattedDateTime = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+        const sessionID = `${formattedDateTime}_${uuidv4()}`;
         res.json({
             message: "Upload successful",
-            normID: matchedKey,
             filename: filename,
-            sessionID: Date.now().toString() // Simple session ID
+            sessionID: sessionID
         });
 
     } catch (error) {
         if (req.file) await fs.remove(req.file.path).catch(console.error);
         console.error("Upload error:", error);
-        res.status(500).json({ message: "Internal server error during upload" });
+        res.status(500).json({ message: "Internal server error during upload: " + error.message });
     }
 });
 
@@ -145,146 +120,246 @@ app.post('/api/transform', async (req, res) => {
     const { sessionID, filename, normID } = req.body;
 
     if (!sessionID || !filename || !normID) {
-        return res.status(400).json({ message: "Missing parameters" });
+        return res.status(400).json({ messageKey: "missing_parameters", message: "Missing parameters" });
     }
 
     const sessionDir = path.join(WORK_DIR, sessionID);
     const uploadedFile = path.join(UPLOAD_DIR, filename);
 
     if (!fs.existsSync(uploadedFile)) {
-        return res.status(404).json({ message: "Uploaded file not found" });
+        return res.status(404).json({ messageKey: "uploaded_file_not_found", message: "Uploaded file not found" });
     }
+
+    if (activeTransformation) {
+        return res.status(409).json({
+            messageKey: "transformation_in_progress",
+            message: "A transformation is already in progress. Please wait.",
+            activeSessionID: activeTransformation
+        });
+    }
+
+    // Acquire Lock
+    activeTransformation = sessionID;
 
     // Start async process
     (async () => {
         try {
-            // Unzip logic moved to /api/check-content.
-            // Here we just broadcast update that we are starting transform of confirmed content.
-            broadcast({ type: 'STATUS', message: 'Initializing transformation...', progress: 10 });
-
-            // Simulation of Bitmark conversion
-            broadcast({ type: 'STATUS', message: 'Parsing XML...', progress: 50 });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            broadcast({ type: 'STATUS', message: 'Converting to Bitmark...', progress: 75 });
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Determine output filename: use gmbdocid if available, else normID
-            const registry = getRegistry();
-            const config = registry[normID] || {};
-            const outputName = config.gmbdocid ? config.gmbdocid : normID;
-
-            // Create fake .bitmark file
-            const bitmarkContent = `[bitmark]
-// Converted from ${normID}
-// GMB Doc ID: ${outputName}
-// Date: ${new Date().toISOString()}
-
-This is a simulated bitmark conversion result for ${normID}.
-Content was extracted from ${filename}.
-
-[chapter]
-## Introduction
-This standard handles...`;
-            // Output .bitmark file into the book directory
-            const bookDir = path.join(sessionDir, normID);
-            // Ensure exists (it should from check-content)
-            await fs.ensureDir(bookDir);
-            await fs.writeFile(path.join(bookDir, `${outputName}.bitmark`), bitmarkContent);
-
-            broadcast({ type: 'STATUS', message: 'Done', progress: 100, completed: true, bitmarkPath: `${normID}/${outputName}.bitmark` });
+            const config = {
+                workDir: WORK_DIR,
+                uploadDir: UPLOAD_DIR
+            };
+            const converter = new Converter(sessionID, normID, config, broadcast);
+            await converter.start();
 
         } catch (error) {
             console.error("Transformation error:", error);
-            broadcast({ type: 'ERROR', message: error.message });
+            broadcast({ type: 'ERROR', message: error.message, normID });
+        } finally {
+            // Release Lock
+            if (activeTransformation === sessionID) {
+                activeTransformation = null;
+                console.log(`Lock released for session ${sessionID}`);
+            }
         }
     })();
 
-    res.json({ message: "Transformation started", sessionID });
+    res.json({ messageKey: "transformation_started", message: "Transformation started", sessionID });
 });
 
 app.post('/api/check-content', async (req, res) => {
-    const { sessionID, filename, normID } = req.body;
+    const { sessionID, filename, normID } = req.body; // Added to ensure variables are defined
     if (!sessionID || !filename || !normID) {
-        return res.status(400).json({ message: "Missing parameters" });
+        return res.status(400).json({ messageKey: "missing_parameters", message: "Missing parameters" });
     }
 
+    // 4. Update /api/check-content to perform full validation
     const sessionDir = path.join(WORK_DIR, sessionID);
     const uploadedFile = path.join(UPLOAD_DIR, filename);
 
     if (!fs.existsSync(uploadedFile)) {
-        return res.status(404).json({ message: "Uploaded file not found" });
+        return res.status(404).json({ messageKey: "uploaded_file_not_found", message: "Uploaded file not found" });
     }
 
     try {
-        await fs.ensureDir(sessionDir);
-        await fs.emptyDir(sessionDir);
+        const tempUnzipDir = path.join(sessionDir, '_temp_unzip');
+        await fs.ensureDir(tempUnzipDir);
+        await fs.emptyDir(tempUnzipDir);
 
-        // Copy content from current versions if exists (Update Base)
+        // a) Unzip to temp
+        const zip = new AdmZip(uploadedFile);
+        zip.extractAllTo(tempUnzipDir, true);
+
+        // b) Scan structure
+        // CLEANUP: Remove __MACOSX if it exists
+        await fs.remove(path.join(tempUnzipDir, '__MACOSX'));
+
+        // Helper to recursively find folders
+        const getDirs = async (dir) => {
+            const dirents = await fs.readdir(dir, { withFileTypes: true });
+            return dirents.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+        };
+
+        let rootFiles = await fs.readdir(tempUnzipDir);
+        let rootDirs = await getDirs(tempUnzipDir);
+
+        // Filter out system files/dirs from logic if needed, but __MACOSX is already gone
+        rootDirs = rootDirs.filter(d => d !== '__MACOSX');
+
+        // CHECK FOR WRAPPER
+        let searchDir = tempUnzipDir;
+        if (rootDirs.length === 1 && !rootDirs[0].toUpperCase().endsWith('_XML')) {
+            // It is a wrapper
+            searchDir = path.join(tempUnzipDir, rootDirs[0]);
+            // Update root lists from wrapper
+            rootDirs = await getDirs(searchDir);
+            // rootFiles not strictly needed unless we want to ensure no lose files up top
+        }
+
+        // c) Find Exactly one _XML dir
+        const xmlDirs = rootDirs.filter(d => d.toUpperCase().endsWith('_XML'));
+        if (xmlDirs.length !== 1) {
+            await fs.remove(sessionDir); // Cleanup
+            return res.status(400).json({
+                messageKey: "zip_error_xml_count",
+                message: "ZIP must contain exactly one directory ending in '_XML'."
+            });
+        }
+        const xmlDirName = xmlDirs[0];
+        const xmlDirPath = path.join(searchDir, xmlDirName);
+
+        // d) Find Exactly one inner dir
+        const innerDirs = await getDirs(xmlDirPath);
+        const filteredInner = innerDirs.filter(d => d !== '__MACOSX'); // just in case
+
+        if (filteredInner.length !== 1) {
+            await fs.remove(sessionDir);
+            return res.status(400).json({
+                messageKey: "zip_error_inner_count",
+                params: { dir: xmlDirName },
+                message: `The directory '${xmlDirName}' must contain exactly one subdirectory.`
+            });
+        }
+        const innerDirName = filteredInner[0];
+        const innerDirPath = path.join(xmlDirPath, innerDirName);
+
+        // e) Check metadata.xml and content.xml
+        const hasMetadata = await fs.pathExists(path.join(innerDirPath, 'metadata.xml'));
+        const hasContent = await fs.pathExists(path.join(innerDirPath, 'content.xml'));
+
+        if (!hasMetadata || !hasContent) {
+            await fs.remove(sessionDir);
+            return res.status(400).json({
+                messageKey: "zip_error_missing_files",
+                params: { dir: innerDirName },
+                message: `Missing 'metadata.xml' or 'content.xml' in '${innerDirName}'.`
+            });
+        }
+
+        // f) Parse metadata for NormID
+        const metadataXml = await fs.readFile(path.join(innerDirPath, 'metadata.xml'), 'utf-8');
+        const nameMatch = metadataXml.match(/<name>(.*?)<\/name>/);
+
+        if (!nameMatch || !nameMatch[1]) {
+            await fs.remove(sessionDir);
+            return res.status(400).json({
+                messageKey: "zip_error_metadata_tag",
+                message: "Could not find <name> tag in metadata.xml"
+            });
+        }
+        const extractedNormID = nameMatch[1].trim();
+
+        // g) Validate against registry
+        const registry = getRegistry();
+        const registryKeys = Object.keys(registry);
+        let matchedKey = null;
+
+        if (registry[extractedNormID]) {
+            matchedKey = extractedNormID;
+        }
+
+        if (!matchedKey) {
+            await fs.remove(sessionDir);
+            return res.status(400).json({
+                messageKey: "zip_error_normid_mismatch",
+                params: { id: extractedNormID },
+                message: `NormID '${extractedNormID}' found in metadata.xml is not in the registry.`,
+                validIDs: registryKeys
+            });
+        }
+
+        // h) Move valid content to final destination: sessionDir/normID
+        // We know the valid content is at 'xmlDirPath' (which is the _XML folder).
+        // The Converter expects the folder to be named <NormID>_XML.
+        // So we move/rename 'xmlDirPath' to 'sessionDir/<NormID>_XML'.
+        // Wait, the structure converter expects is:
+        // [WorkDir]/[SessionID]/[NormID]/[NormID]_XML/...
+
+        // Ensure Book Dir
+        const bookDir = path.join(sessionDir, matchedKey);
+        await fs.ensureDir(bookDir);
+        await fs.emptyDir(bookDir);
+
+        const finalXmlPath = path.join(bookDir, `${matchedKey}_XML`);
+
+        // Move from temp
+        await fs.move(xmlDirPath, finalXmlPath);
+
+        // Check for PDF in tempUnzipDir and move to bookDir
+        try {
+            const findPdf = async (dir) => {
+                const entries = await fs.readdir(dir);
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry);
+                    const stat = await fs.stat(fullPath);
+                    if (stat.isDirectory()) {
+                        const found = await findPdf(fullPath);
+                        if (found) return found;
+                    } else if (entry.toLowerCase().endsWith('.pdf')) {
+                        return fullPath;
+                    }
+                }
+                return null;
+            };
+
+            const pdfPath = await findPdf(tempUnzipDir);
+            if (pdfPath) {
+                const destPdfPath = path.join(bookDir, path.basename(pdfPath));
+                await fs.move(pdfPath, destPdfPath, { overwrite: true });
+            }
+        } catch (err) {
+            console.warn("Error moving PDF:", err);
+        }
+
+        // Cleanup temp
+        await fs.remove(tempUnzipDir);
+
+        // Copy content from current versions if exists (Update Base) - ORIGINAL LOGIC PRESERVED
         const currentVersionDir = path.join(VERSION_DIR, 'current');
         if (fs.existsSync(currentVersionDir)) {
-            await fs.copy(currentVersionDir, sessionDir);
+            // We only want to copy stuff that is NOT the book we just processed?
+            // Or do we copy everything into sessionDir?
+            // The original logic was: copy entire currentVersionDir to sessionDir.
+            // Then unzip ON TOP.
+            // NOW: We are selective.
+            // Let's copy everything from 'current' to 'sessionDir', EXCEPT the book we just uploaded.
+            // Actually simplest is copy all, then overwrite with our new bookDir.
+            await fs.copy(currentVersionDir, sessionDir, { overwrite: false });
         }
 
-        // Define Book Directory (sessionDir/<normID>)
-        const bookDir = path.join(sessionDir, normID);
-        await fs.ensureDir(bookDir);
-        await fs.emptyDir(bookDir); // Replace existing book content if any
-
-        // Unzip into Book Directory
-        const zip = new AdmZip(uploadedFile);
-        zip.extractAllTo(bookDir, true);
-
-        // CLEANUP: Remove __MACOSX if it exists
-        await fs.remove(path.join(bookDir, '__MACOSX'));
-
-        // Validation Logic
-        // 1. Check existence of <NormID>_XML INSIDE bookDir
-        const xmlDirName = `${normID}_XML`;
-        // Case-insensitive check helper
-        const findPathCaseInsensitive = async (basePath, targetName) => {
-            if (!fs.existsSync(basePath)) return null;
-            const files = await fs.readdir(basePath);
-            const found = files.find(f => {
-                return f.toLowerCase() === targetName.toLowerCase() && f !== '__MACOSX';
-            });
-            return found ? path.join(basePath, found) : null;
-        };
-        const actualXmlDirPath = await findPathCaseInsensitive(bookDir, xmlDirName);
-        if (!actualXmlDirPath) {
-            return res.status(400).json({ messageKey: 'check_fail_xml_dir', params: { dir: xmlDirName } });
-        }
-
-        // 2. Find inner directory (expect exactly one)
-        // Also clean up __MACOSX inside the xmlDir if it somehow exists
-        await fs.remove(path.join(actualXmlDirPath, '__MACOSX'));
-
-        const innerFiles = await fs.readdir(actualXmlDirPath);
-        const innerDirs = [];
-        for (const file of innerFiles) {
-            if (file === '__MACOSX') continue;
-            const fp = path.join(actualXmlDirPath, file);
-            const stats = await fs.stat(fp);
-            if (stats.isDirectory()) {
-                innerDirs.push(file);
-            }
-        }
-        if (innerDirs.length !== 1) {
-            return res.status(400).json({ messageKey: 'check_fail_inner_dir', params: { dir: xmlDirName } });
-        }
-        const innerDirPath = path.join(actualXmlDirPath, innerDirs[0]);
-
-        // 3. Check for content.xml and metadata.xml inside that inner directory
-        if (!fs.existsSync(path.join(innerDirPath, 'content.xml')) ||
-            !fs.existsSync(path.join(innerDirPath, 'metadata.xml'))) {
-            return res.status(400).json({ messageKey: 'check_fail_files', params: { dir: innerDirs[0] } });
-        }
-
-        res.json({ message: "Content check passed" });
+        // Return Success with NormID
+        res.json({
+            messageKey: "content_check_success",
+            message: "Content check passed",
+            normID: matchedKey
+        });
 
     } catch (error) {
         console.error("Content check error:", error);
-        res.status(500).json({ message: "Internal server error during content check: " + error.message });
+        res.status(500).json({
+            messageKey: "internal_server_error_content",
+            params: { error: error.message },
+            message: "Internal server error during content check: " + error.message
+        });
     }
 });
 
@@ -293,7 +368,7 @@ app.get('/api/messages', async (req, res) => {
         const messages = await fs.readJson(path.join(CONFIG_DIR, 'messages.json'));
         res.json(messages);
     } catch (e) {
-        res.status(500).json({ error: "Could not load messages" });
+        res.status(500).json({ messageKey: "load_messages_error", error: "Could not load messages" });
     }
 });
 
@@ -345,18 +420,18 @@ app.post('/api/release', async (req, res) => {
     const { sessionID, releaseNote, releaseName, label } = req.body;
 
     if (!sessionID) {
-        return res.status(400).json({ message: "Session ID required" });
+        return res.status(400).json({ messageKey: "session_id_required", message: "Session ID required" });
     }
     if (!releaseNote || releaseNote.length < 15) {
-        return res.status(400).json({ message: "Release note must be at least 15 chars" });
+        return res.status(400).json({ messageKey: "release_note_too_short", message: "Release note must be at least 15 chars" });
     }
     if (!releaseName || releaseName.trim().length === 0) {
-        return res.status(400).json({ message: "Release name is required" });
+        return res.status(400).json({ messageKey: "release_name_required", message: "Release name is required" });
     }
 
     const sessionDir = path.join(WORK_DIR, sessionID);
     if (!fs.existsSync(sessionDir)) {
-        return res.status(404).json({ message: "Session not found" });
+        return res.status(404).json({ messageKey: "session_not_found", message: "Session not found" });
     }
 
     try {
@@ -390,11 +465,11 @@ app.post('/api/release', async (req, res) => {
         const metaContent = `Timestamp: ${new Date().toISOString()}\nLabel: ${label || ''}\nReleaseNote: ${releaseNote}\nReleaser: ${releaseName}`;
         await fs.writeFile(path.join(currentDir, 'label.txt'), metaContent);
 
-        res.json({ message: "Release successful" });
+        res.json({ messageKey: "release_successful", message: "Release successful" });
 
     } catch (error) {
         console.error("Release error:", error);
-        res.status(500).json({ message: "Release failed" });
+        res.status(500).json({ messageKey: "release_failed", message: "Release failed" });
     }
 });
 
@@ -463,14 +538,14 @@ app.get('/api/versions', async (req, res) => {
 
         res.json(versions);
     } catch (error) {
-        res.status(500).json({ message: "Error listing versions" });
+        res.status(500).json({ messageKey: "error_listing_versions", message: "Error listing versions" });
     }
 });
 
 app.post('/api/rollback', async (req, res) => {
     const { targetVersionId } = req.body;
     if (!targetVersionId) {
-        return res.status(400).json({ message: "Target version required" });
+        return res.status(400).json({ messageKey: "target_version_required", message: "Target version required" });
     }
 
     const currentDir = path.join(VERSION_DIR, 'current');
@@ -480,7 +555,7 @@ app.post('/api/rollback', async (req, res) => {
 
     const targetPath = path.join(archiveDir, targetVersionId);
     if (!fs.existsSync(targetPath)) {
-        return res.status(404).json({ message: "Target version not found" });
+        return res.status(404).json({ messageKey: "target_version_not_found", message: "Target version not found" });
     }
 
     try {
@@ -501,10 +576,14 @@ app.post('/api/rollback', async (req, res) => {
         // 3. Make target the new current
         await fs.move(targetPath, currentDir);
 
-        res.json({ message: "Rollback successful" });
+        res.json({ messageKey: "rollback_successful", message: "Rollback successful" });
     } catch (e) {
         console.error("Rollback error:", e);
-        res.status(500).json({ message: "Rollback failed: " + e.message });
+        res.status(500).json({
+            messageKey: "rollback_failed",
+            params: { error: e.message },
+            message: "Rollback failed: " + e.message
+        });
     }
 });
 
@@ -553,8 +632,7 @@ app.get('/api/download/:versionId/:bookName', async (req, res) => {
         res.send(zipBuffer);
 
     } catch (error) {
-        console.error("Book download error:", error);
-        res.status(500).send("Error processing request");
+        res.status(500).json({ messageKey: "error_processing_request", message: "Error processing request" });
     }
 });
 
@@ -605,7 +683,7 @@ app.get('/api/download/:versionId', async (req, res) => {
 
     } catch (error) {
         console.error("Version download error:", error);
-        res.status(500).send("Error generating zip");
+        res.status(500).json({ messageKey: "error_generating_zip", message: "Error generating zip" });
     }
 });
 

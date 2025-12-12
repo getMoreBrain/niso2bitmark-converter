@@ -1,7 +1,9 @@
 # .gitignore
+versions/
 node_modules/
 work/
 tmp/
+tmp_validation_test/
 temp_zip/
 ignore/
 upload/

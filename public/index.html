@@ -43,6 +43,15 @@
         <!-- Converter Tab -->
         <section id="view-converter" class="max-w-4xl mx-auto space-y-8">
 
+            <!-- NormID Display -->
+            <!-- NormID Display -->
+            <div id="normid-display"
+                class="opacity-0 transition-opacity duration-1000 mb-8 flex justify-center items-center h-12">
+                <span class="text-gray-400 text-sm font-medium mr-3 uppercase tracking-wider"
+                    data-i18n="normid_label">Normen-Paket:</span>
+                <span id="normid-value" class="text-2xl font-bold text-white tracking-tight"></span>
+            </div>
+
             <!-- Stepper -->
             <div class="flex items-center justify-between mb-8">
                 <div class="w-full flex justify-between relative">
@@ -139,7 +148,10 @@
                                 </div>
                             </div>
                         </div>
-                        <p id="progress-text" class="text-gray-600 font-medium animate-pulse">Initialisiere...</p>
+                        <div class="flex justify-between items-center text-sm font-medium mt-2">
+                            <span id="progress-text" class="text-gray-600 animate-pulse">Initialisiere...</span>
+                            <span id="current-book" class="text-primary font-bold"></span>
+                        </div>
                         <div class="flex justify-center space-x-4 mt-8">
                             <!-- Morphing Icon Animation Placeholder -->
                             <div class="text-4xl">📦 ➡️ 📄 ➡️ 📝</div>
@@ -290,9 +302,10 @@
 
         function t(key, params = {}) {
             let text = '';
-            // Check flat key first (from legacy if any) or nested 'ui'/'errors'
+            // Check flat key first (from legacy if any) or nested 'ui'/'errors'/'infos'
             if (i18n.ui && i18n.ui[key]) text = i18n.ui[key][currentLang];
             else if (i18n.errors && i18n.errors[key]) text = i18n.errors[key][currentLang];
+            else if (i18n.infos && i18n.infos[key]) text = i18n.infos[key][currentLang];
             else text = key; // Fallback
 
             // Params replacement
@@ -361,12 +374,17 @@
             document.getElementById('upload-status').innerHTML = '';
             document.getElementById('upload-status').classList.add('hidden');
             document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('current-book').innerText = '';
             document.getElementById('transform-idle').classList.remove('hidden');
             document.getElementById('transform-progress').classList.add('hidden');
             document.getElementById('preview-code').innerText = '';
             document.getElementById('release-note').value = '';
             document.getElementById('release-name').value = '';
             // document.getElementById('release-confirm').checked = false;
+
+            // Hide NormID Display
+            document.getElementById('normid-display').classList.add('opacity-0');
+            document.getElementById('normid-value').innerText = '';
         }
 
         // Step 1: Upload
@@ -407,16 +425,27 @@
 
             const statusDiv = document.getElementById('upload-status');
             statusDiv.classList.remove('hidden');
-            statusDiv.innerHTML = `<span class="text-gray-500">Validating ${file.name}...</span>`;
+            statusDiv.innerHTML = `<span class="text-gray-500">${t('uploading_file', { filename: file.name })}</span>`;
+
+            // Reset partial state for new session (keep current view until success)
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('current-book').innerText = '';
+            document.getElementById('preview-code').innerText = '';
+            document.getElementById('transform-idle').classList.remove('hidden');
+            document.getElementById('transform-progress').classList.add('hidden');
+
+            document.body.style.cursor = 'wait'; // NEW: Wait cursor
 
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 const data = await res.json();
 
                 if (res.ok) {
-                    sessionData.filename = data.filename;
-                    sessionData.normID = data.normID;
-                    sessionData.sessionID = data.sessionID;
+                    sessionData = {
+                        sessionID: data.sessionID,
+                        filename: data.filename,
+                        normID: null // Unknown yet
+                    };
 
                     statusDiv.innerHTML = `<div class="text-green-600 font-bold">✅ ${file.name}</div>`;
                     showToast(t('upload_success'), 'success');
@@ -441,6 +470,8 @@
                 }
             } catch (e) {
                 statusDiv.innerHTML = `<div class="text-red-600 font-bold">❌ Netzwerkfehler</div>`;
+            } finally {
+                document.body.style.cursor = 'default'; // Reset cursor
             }
         }
 
@@ -456,13 +487,18 @@
                     body: JSON.stringify({
                         sessionID: sessionData.sessionID,
                         filename: sessionData.filename,
-                        normID: sessionData.normID
+                        normID: "__UNKNOWN__" // Server validation will find it
                     })
                 });
 
                 const data = await res.json();
 
                 if (res.ok) {
+                    // Update NormID from server
+                    sessionData.normID = data.normID;
+                    document.getElementById('normid-value').innerText = data.normID;
+                    document.getElementById('normid-display').classList.remove('opacity-0');
+
                     showToast(t('check_success'), 'success');
                     setTimeout(() => goToStep(3), 1000);
                 } else {
@@ -471,12 +507,26 @@
                         msg = t(data.messageKey, data.params || {});
                     }
 
-                    progressDiv.innerHTML = `<div class="text-red-500 font-bold">❌ ${msg}</div>`;
+                    let errorHtml = `<div class="text-red-500 font-bold mb-4">❌ ${msg}</div>`;
+
+                    // Render Valid IDs if present (e.g. zip_error_normid_mismatch)
+                    if (data.validIDs && Array.isArray(data.validIDs)) {
+                        errorHtml += `<div class="text-left mt-4 border border-gray-700 rounded p-4 bg-[#1f1f1f]">
+                            <p class="text-sm font-semibold mb-2 text-gray-300">${t('valid_ids')}</p>
+                            <div class="grid grid-cols-5 gap-2 text-xs text-gray-400 max-h-64 overflow-y-auto">`;
+                        data.validIDs.forEach(id => {
+                            errorHtml += `<div class="bg-gray-800 p-2 rounded border border-gray-700 truncate hover:text-white transition-colors duration-150" title="${id}">${id}</div>`;
+                        });
+                        errorHtml += '</div></div>';
+                    }
+
+                    progressDiv.innerHTML = errorHtml;
                     showToast(msg, 'error');
                 }
 
             } catch (e) {
                 showToast(t('network_error'), 'error');
+                console.error(e);
             }
         }
 
@@ -491,6 +541,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(sessionData)
                 });
+
+                if (res.status === 409) {
+                    const data = await res.json();
+                    showToast('⚠️ Das System ist gerade beschäftigt. Bitte warten Sie, bis die aktuelle Transformation abgeschlossen ist.', 'error');
+                    // Reset UI
+                    document.getElementById('transform-idle').classList.remove('hidden');
+                    document.getElementById('transform-progress').classList.add('hidden');
+                    return;
+                }
 
                 if (!res.ok) {
                     const data = await res.json();
@@ -514,7 +573,17 @@
                     const text = document.getElementById('progress-text');
 
                     bar.style.width = data.progress + '%';
-                    text.innerText = data.message;
+
+                    // NEW: Handle localized messageKey
+                    let displayMsg = data.message;
+                    if (data.messageKey) {
+                        displayMsg = t(data.messageKey, data.params || {});
+                    }
+                    text.innerText = displayMsg;
+
+                    if (data.normID) {
+                        document.getElementById('current-book').innerText = "Buch: " + data.normID;
+                    }
 
                     if (data.completed) {
                         setTimeout(() => {
@@ -524,7 +593,12 @@
                         }, 500);
                     }
                 } else if (data.type === 'ERROR') {
-                    showToast('Transformation fehlgeschlagen: ' + data.message, 'error');
+                    // Also attempt translation for errors if key provided (though server usually sends msg string)
+                    let errorMsg = data.message;
+                    if (data.messageKey) {
+                        errorMsg = t(data.messageKey, data.params || {});
+                    }
+                    showToast('Transformation fehlgeschlagen: ' + errorMsg, 'error');
                 }
             };
         }
@@ -583,7 +657,7 @@
             e.preventDefault();
             const note = document.getElementById('release-note').value;
             const name = document.getElementById('release-name').value;
-            const confirm = document.getElementById('release-confirm').checked;
+            // const confirm = document.getElementById('release-confirm').checked;
 
             try {
                 const res = await fetch('/api/release', {

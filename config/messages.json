@@ -247,19 +247,105 @@
             "it": "Rollback"
         }
     },
-    "errors": {
+    "infos": {
+        "transformation_finished": {
+            "de": "Transformation abgeschlossen.",
+            "en": "Transformation finished.",
+            "fr": "Transformation terminée.",
+            "it": "Trasformazione completata."
+        },
         "upload_success": {
             "de": "Upload erfolgreich",
             "en": "Upload successful",
             "fr": "Téléversement réussi",
             "it": "Caricamento riuscito"
         },
-        "validating": {
-            "de": "Validiere",
-            "en": "Validating",
-            "fr": "Validation",
-            "it": "Validazione"
+        "uploading_file": {
+            "de": "Lade {filename} hoch...",
+            "en": "Uploading {filename}...",
+            "fr": "Téléversement de {filename}...",
+            "it": "Caricamento di {filename}..."
         },
+        "normid_label": {
+            "de": "Norm:",
+            "en": "Standard:",
+            "fr": "Norme:",
+            "it": "Norma:"
+        },
+        "release_success": {
+            "de": "Version erfolgreich veröffentlicht!",
+            "en": "Version successfully published!",
+            "fr": "Version publiée avec succès!",
+            "it": "Versione pubblicata con successo!"
+        },
+        "rollback_success": {
+            "de": "Rollback erfolgreich!",
+            "en": "Rollback successful!",
+            "fr": "Restauration réussie!",
+            "it": "Rollback riuscito!"
+        },
+        "rollback_confirm": {
+            "de": "Möchten Sie wirklich auf Version {id} zurückrollen? Alle neueren Versionen werden archiviert (invalidiert).",
+            "en": "Do you really want to rollback to version {id}? All newer versions will be archived (invalidated).",
+            "fr": "Voulez-vous vraiment revenir à la version {id} ? Toutes les versions plus récentes seront archivées (invalidées).",
+            "it": "Vuoi davvero tornare alla versione {id}? Tutte le versioni più recenti saranno archiviate (invalidati)."
+        },
+        "transformation_in_progress": {
+            "de": "Eine Transformation ist bereits im Gange. Bitte warten.",
+            "en": "A transformation is already in progress. Please wait.",
+            "fr": "Une transformation est déjà en cours. Veuillez patienter.",
+            "it": "Una trasformazione è già in corso. Si prega di attendere."
+        },
+        "content_check_success": {
+            "de": "Inhalt erfolgreich geprüft!",
+            "en": "Content check passed",
+            "fr": "Contenu vérifié avec succès !",
+            "it": "Controllo del contenuto superato"
+        },
+        "release_successful": {
+            "de": "Release erfolgreich.",
+            "en": "Release successful.",
+            "fr": "Publication réussie.",
+            "it": "Rilascio riuscito."
+        },
+        "transformation_started": {
+            "de": "Transformation gestartet.",
+            "en": "Transformation started.",
+            "fr": "Transformation démarrée.",
+            "it": "Trasformazione avviata."
+        },
+        "update_doc_refs": {
+            "de": "Update Dokumentreferenzen: {count}%",
+            "en": "Updating document references: {count}%",
+            "fr": "Mise à jour des références documentaires : {count}%",
+            "it": "Aggiornamento riferimenti documento: {count}%"
+        },
+        "img_upload": {
+            "de": "Bild-Upload: {count}",
+            "en": "Image upload: {count}",
+            "fr": "Upload d'image : {count}",
+            "it": "Caricamento immagine: {count}"
+        },
+        "convert_to_bitmark": {
+            "de": "Konvertierung zu Bitmark läuft...",
+            "en": "Conversion to Bitmark in progress...",
+            "fr": "Conversion en Bitmark en cours...",
+            "it": "Conversione in Bitmark in corso..."
+        },
+        "scanning_and_updating_doc_ids": {
+            "de": "Scanning und Update von Doc-IDs",
+            "en": "Scanning and updating Doc-IDs",
+            "fr": "Scanning et mise à jour des IDs",
+            "it": "Scanning e aggiornamento ID"
+        },
+        "transform_to_json": {
+            "de": "Konvertierung zu JSON {count}%",
+            "en": "Conversion to JSON {count}%",
+            "fr": "Conversion en JSON {count}%",
+            "it": "Conversione in JSON {count}%"
+        }
+    },
+    "errors": {
         "network_error": {
             "de": "Netzwerkfehler",
             "en": "Network error",
@@ -273,10 +359,10 @@
             "it": "Errore: "
         },
         "valid_ids": {
-            "de": "Gültige NormIDs:",
-            "en": "Valid NormIDs:",
-            "fr": "NormIDs valides:",
-            "it": "NormIDs validi:"
+            "de": "Verfügbare Normen:",
+            "en": "Available Standards:",
+            "fr": "Normes disponibles:",
+            "it": "Standard disponibili:"
         },
         "transform_fail": {
             "de": "Transformation fehlgeschlagen: ",
@@ -284,29 +370,11 @@
             "fr": "Échec de la conversion: ",
             "it": "Conversione fallita: "
         },
-        "release_success": {
-            "de": "Version erfolgreich veröffentlicht!",
-            "en": "Version successfully published!",
-            "fr": "Version publiée avec succès!",
-            "it": "Versione pubblicata con successo!"
-        },
         "release_fail": {
             "de": "Release fehlgeschlagen",
             "en": "Release failed",
             "fr": "Échec de la publication",
             "it": "Rilascio fallito"
-        },
-        "rollback_success": {
-            "de": "Rollback erfolgreich!",
-            "en": "Rollback successful!",
-            "fr": "Restauration réussie!",
-            "it": "Rollback riuscito!"
-        },
-        "rollback_confirm": {
-            "de": "Möchten Sie wirklich auf Version {id} zurückrollen? Alle neueren Versionen werden archiviert (invalidiert).",
-            "en": "Do you really want to rollback to version {id}? All newer versions will be archived (invalidated).",
-            "fr": "Voulez-vous vraiment revenir à la version {id} ? Toutes les versions plus récentes seront archivées (invalidées).",
-            "it": "Vuoi davvero tornare alla versione {id}? Tutte le versioni più recenti saranno archiviate (invalidati)."
         },
         "check_fail_xml_dir": {
             "de": "ZIP muss Verzeichnis '{dir}' enthalten (case-insensitive)",
@@ -325,6 +393,162 @@
             "en": "Directory '{dir}' must contain 'content.xml' and 'metadata.xml'.",
             "fr": "Le répertoire '{dir}' doit contenir 'content.xml' et 'metadata.xml'.",
             "it": "La cartella '{dir}' deve contenere 'content.xml' e 'metadata.xml'."
+        },
+        "zip_error_xml_count": {
+            "de": "ZIP muss genau ein Verzeichnis mit der Endung '_XML' enthalten.",
+            "en": "ZIP must contain exactly one directory ending in '_XML'.",
+            "fr": "Le ZIP doit contenir exactement un répertoire se terminant par '_XML'.",
+            "it": "Il ZIP deve contenere esattamente una cartella che termina con '_XML'."
+        },
+        "zip_error_inner_count": {
+            "de": "Das Verzeichnis '{dir}' muss genau ein Unterverzeichnis enthalten.",
+            "en": "The directory '{dir}' must contain exactly one subdirectory.",
+            "fr": "Le répertoire '{dir}' doit contenir exactement un sous-répertoire.",
+            "it": "La cartella '{dir}' deve contenere esattamente una sottocartella."
+        },
+        "zip_error_missing_files": {
+            "de": "Fehlende 'metadata.xml' oder 'content.xml' in '{dir}'.",
+            "en": "Missing 'metadata.xml' or 'content.xml' in '{dir}'.",
+            "fr": "Il manque 'metadata.xml' ou 'content.xml' dans '{dir}'.",
+            "it": "Manca 'metadata.xml' o 'content.xml' in '{dir}'."
+        },
+        "zip_error_metadata_tag": {
+            "de": "Konnte <name> Tag in metadata.xml nicht finden.",
+            "en": "Could not find <name> tag in metadata.xml.",
+            "fr": "Impossible de trouver la balise <name> dans metadata.xml.",
+            "it": "Impossibile trovare il tag <name> in metadata.xml."
+        },
+        "zip_error_normid_mismatch": {
+            "de": "NormID '{id}' aus metadata.xml ist ein unbekannte/nicht registrierte Norm",
+            "en": "NormID '{id}' found in metadata.xml is not in the registry.",
+            "fr": "La NormID '{id}' trouvée dans metadata.xml n'est pas dans le registre.",
+            "it": "NormID '{id}' trovato in metadata.xml non è nel registro."
+        },
+        "no_file_uploaded": {
+            "de": "Keine Datei hochgeladen.",
+            "en": "No file uploaded.",
+            "fr": "Aucun fichier téléchargé.",
+            "it": "Nessun file caricato."
+        },
+        "missing_parameters": {
+            "de": "Fehlende Parameter.",
+            "en": "Missing parameters.",
+            "fr": "Paramètres manquants.",
+            "it": "Parametri mancanti."
+        },
+        "uploaded_file_not_found": {
+            "de": "Hochgeladene Datei nicht gefunden.",
+            "en": "Uploaded file not found.",
+            "fr": "Fichier téléchargé introuvable.",
+            "it": "File caricato non trovato."
+        },
+        "xml_dir_not_found_unzip": {
+            "de": "Konnte _XML Verzeichnis nach dem Entpacken nicht finden.",
+            "en": "Could not find _XML directory after unzip.",
+            "fr": "Impossible de trouver le répertoire _XML après la décompression.",
+            "it": "Impossibile trovare la directory _XML dopo la decompressione."
+        },
+        "internal_server_error_content": {
+            "de": "Interner Serverfehler während der Inhaltsprüfung: {error}",
+            "en": "Internal server error during content check: {error}",
+            "fr": "Erreur interne du serveur lors de la vérification du contenu : {error}",
+            "it": "Errore interno del server durante il controllo del contenuto: {error}"
+        },
+        "load_messages_error": {
+            "de": "Konnte Nachrichten nicht laden.",
+            "en": "Could not load messages.",
+            "fr": "Impossible de charger les messages.",
+            "it": "Impossibile caricare i messaggi."
+        },
+        "preview_not_found": {
+            "de": "Vorschau nicht gefunden.",
+            "en": "Preview not found.",
+            "fr": "Aperçu introuvable.",
+            "it": "Anteprima non trovata."
+        },
+        "error_reading_preview": {
+            "de": "Fehler beim Lesen der Vorschaudatei.",
+            "en": "Error reading preview file.",
+            "fr": "Erreur lors de la lecture du fichier d'aperçu.",
+            "it": "Errore durante la lettura del file di anteprima."
+        },
+        "session_id_required": {
+            "de": "Sitzungs-ID erforderlich.",
+            "en": "Session ID required.",
+            "fr": "ID de session requis.",
+            "it": "ID sessione richiesto."
+        },
+        "release_note_too_short": {
+            "de": "Die Release-Notiz muss mindestens 15 Zeichen lang sein.",
+            "en": "Release note must be at least 15 chars.",
+            "fr": "La note de version doit comporter au moins 15 caractères.",
+            "it": "La nota di rilascio deve contenere almeno 15 caratteri."
+        },
+        "release_name_required": {
+            "de": "Name des Releasers ist erforderlich.",
+            "en": "Release name is required.",
+            "fr": "Le nom du responsable est requis.",
+            "it": "Il nome del responsabile è obbligatorio."
+        },
+        "session_not_found": {
+            "de": "Sitzung nicht gefunden.",
+            "en": "Session not found.",
+            "fr": "Session introuvable.",
+            "it": "Sessione non trovata."
+        },
+        "release_failed": {
+            "de": "Release fehlgeschlagen.",
+            "en": "Release failed.",
+            "fr": "Échec de la publication.",
+            "it": "Rilascio fallito."
+        },
+        "error_listing_versions": {
+            "de": "Fehler beim Auflisten der Versionen.",
+            "en": "Error listing versions.",
+            "fr": "Erreur lors de l'énumération des versions.",
+            "it": "Errore durante l'elenco delle versioni."
+        },
+        "target_version_required": {
+            "de": "Zielversion erforderlich.",
+            "en": "Target version required.",
+            "fr": "Version cible requise.",
+            "it": "Versione di destinazione richiesta."
+        },
+        "target_version_not_found": {
+            "de": "Zielversion nicht gefunden.",
+            "en": "Target version not found.",
+            "fr": "Version cible introuvable.",
+            "it": "Versione di destinazione non trovata."
+        },
+        "rollback_successful": {
+            "de": "Rollback erfolgreich.",
+            "en": "Rollback successful.",
+            "fr": "Restauration réussie.",
+            "it": "Rollback riuscito."
+        },
+        "rollback_failed": {
+            "de": "Rollback fehlgeschlagen: {error}",
+            "en": "Rollback failed: {error}",
+            "fr": "Échec de la restauration : {error}",
+            "it": "Rollback fallito: {error}"
+        },
+        "bitmark_not_found_book": {
+            "de": "Bitmark-Datei im Buchverzeichnis nicht gefunden.",
+            "en": "Bitmark file not found in book directory.",
+            "fr": "Fichier Bitmark introuvable dans le répertoire du livre.",
+            "it": "File Bitmark non trovato nella directory del libro."
+        },
+        "error_processing_request": {
+            "de": "Fehler bei der Anfrageverarbeitung.",
+            "en": "Error processing request.",
+            "fr": "Erreur lors du traitement de la demande.",
+            "it": "Errore durante l'elaborazione della richiesta."
+        },
+        "error_generating_zip": {
+            "de": "Fehler beim Generieren der ZIP-Datei.",
+            "en": "Error generating zip.",
+            "fr": "Erreur lors de la génération du fichier ZIP.",
+            "it": "Errore durante la generazione del file ZIP."
         }
     }
 }
