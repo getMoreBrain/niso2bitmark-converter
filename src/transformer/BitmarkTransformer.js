@@ -19,6 +19,7 @@ const MappingStore = require("./MappingStore.js");
 const IDMapper = require("./IDMapper.js");
 const sizeOf = require("image-size");
 const { config } = require("mathjax-node");
+const TransformerLogger = require("./TransformerLogger.js");
 
 // Default configuration object
 const CONFIG = {
@@ -236,10 +237,10 @@ const getImageWidthAndHeight = (filename) => {
       const dimensions = sizeOf(filename);
       return [dimensions.width, dimensions.height];
     } else {
-      console.warn(`Bilddatei nicht gefunden: ${filename}`);
+
     }
   } catch (error) {
-    console.error(`Fehler beim Lesen der Bildabmessungen: ${filename}`, error);
+
   }
   return [null, null];
 };
@@ -312,6 +313,9 @@ const internal_link = (node, visitor) => {
   } else {
     id = visitor.transformer.getAnchorForCustId(rid) || ""; // get AnchorId for customerId
   }
+  if (!id) {
+    CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkUnmatchedRid", " customerid: " + node.customerId + " rid: " + node.rid + " reftype: " + node.refType);
+  }
   return formatInternalLink(txt, id);
 };
 
@@ -359,6 +363,7 @@ const external_link = (node, visitor) => {
     gmbDocId = "";
     gmbAnchor = "";
     bitmark = ` ==${txt}==|link:${gmbDocId}|`;
+    CONFIG.logger.error(TransformerLogger.CATEGORY.LINK, "linkNinonline", "href: " + href);
   } else if (href.indexOf("http") > -1) {
     // external link http
     if (ix_trailer > -1) {
@@ -382,7 +387,7 @@ const external_link = (node, visitor) => {
       );
     }
     if (!anchorId) {
-      console.warn("No anchorId found for href:", href);
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoAnchorId", "href: " + href);
     }
     return formatInternalLink(txt, anchorId);
   } else if (href.includes("fscxeditor://xeditordocument/")) {
@@ -402,7 +407,7 @@ const external_link = (node, visitor) => {
         );
       }
       if (!anchorId) {
-        console.warn("No anchorId found for href:", href);
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoAnchorId", "href: " + href);
       }
       return formatInternalLink(txt, anchorId);
     }
@@ -410,6 +415,7 @@ const external_link = (node, visitor) => {
     if (gmbDocId === "notdefined") {
       // noch kein Mapping für Dokument vorhanden weil nocht nicht zurverfügung gestellt
       bitmark = ` ==${txt}==|xref:|►undef`;
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoMappig", "href: " + href);
     } else if (ix_trailer > -1) {
       // label has Italic and/or Bold expression
       bitmark = ` ==${txt.substring(
@@ -451,7 +457,7 @@ const inlineGraphicOld = (node, visitor) => {
 
     return `\n|image:${url}|@width:25|\n`;
   } catch (error) {
-    console.error("Error processing inline graphic:", error);
+
     return "!! Error processing inline graphic !!";
   }
 };
@@ -641,7 +647,7 @@ function processParagraphRecursion(
       const ref = internal_link(child, visitor);
       paragraphTextByRef.text = paragraphTextByRef.text.concat(ref);
     } else {
-      console.log("## UNKNOWN P Elelment child.name: " + child.name);
+
       paragraphTextByRef.text = paragraphTextByRef.text.concat(
         " !!" + child.name + ": " + child.plaintext + "!! "
       );
@@ -769,7 +775,7 @@ function listItemRecursion(listNode, visitor, listTextByRef, level) {
           }
           firstEl = false;
         } else {
-          console.log("!!!! UNKNOWN Elelment listItem.name: " + el.name);
+
         }
       }
       //end of listItem.children
@@ -859,7 +865,7 @@ function processTermSecSplitted(termSecNode, visitor, currentPath) {
           processNode(n, visitor, currentPath);
         }
       } else {
-        console.log("!!!! UNKNOWN Elelment defItem.name: " + termEl.name);
+
         termDisplTxt =
           termDisplTxt + "!! UNKNOWN TermSec Splitted " + termEl.name + "!!";
       }
@@ -895,7 +901,7 @@ function processTermSec(termSecNode, visitor) {
           }
         }
       } else {
-        console.log("!!!! UNKNOWN Elelment defItem.name: " + termEl.name);
+
         termDisplTxt =
           termDisplTxt + "!! UNKNOWN TermSec " + termEl.name + "!!";
       }
@@ -964,7 +970,7 @@ function processRefList(refListNode, visitor) {
         stdRef = processParagraph(refItemChild, visitor, 2);
         refItemTxt = refItemTxt + stdRef;
       } else {
-        console.log("!!!! UNKNOWN Elelment RefItem.name: " + refItemChild.name);
+
         refItemTxt =
           refItemTxt + "!! UNKNOWN RefList " + refItemChild.name + "!!";
       }
@@ -1071,7 +1077,7 @@ function processDefList(defListNode, visitor) {
           }
         }
       } else {
-        console.log("!!!! UNKNOWN Elelment defItem.name: " + el.name);
+
         defTxt += "!! UNKNOWN DefList " + el.name + "!!";
       }
     }
@@ -1121,13 +1127,13 @@ function processDefListInline(defListNode, visitor) {
             const pseudoPNode = new NINNode(n);
             pseudoPNode.children = [n];
             defItemTxt = defItemTxt + processParagraph(pseudoPNode, visitor, 2);
-            //console.log("!!!! UNKNOWN Elelment defItem.term: " + n.name);
+
           }
         }
       } else if (el.name === "inline-graphic") {
         defItemTxt = defItemTxt + inlineGraphic(el, visitor);
       } else {
-        console.log("!!!! UNKNOWN Elelment defItem.name: " + el.name);
+
         defItemTxt = defItemTxt + "!! UNKNOWN DefList " + el.name + "!!";
       }
     }
@@ -1331,7 +1337,7 @@ function processIndexTerms(parentNode, node, visitor) {
   // todo: rekursiv nach index-term suchen
   for (const child of node.children) {
     if (child.name === "index-term") {
-      console.log("processIndexTerms: " + node.name + " " + node.id);
+
       parentNode.searchTerms.push(index_term(child, visitor));
       visitor.markVisited(child);
     }
@@ -1422,7 +1428,7 @@ class SecVisitor extends IVisitor {
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
 
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     for (let child of node.children) {
       if (!this.isVisited(child)) {
@@ -1449,7 +1455,7 @@ class SubPartVisitor extends IVisitor {
 
     node.isContainer = this.isContainer;
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
     const labelNode = findFirstChild(node, "label");
 
     // SNG49: SNG 491000 comprises various rules (sheets). each rule has individual metadata (std-meta).
@@ -1509,7 +1515,7 @@ class PrintVisitor extends IVisitor {
     node.isContainer = this.isContainer;
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
 
-    console.log(`### ${currentPath}: ${node.plaintext}`);
+
 
     // Handle children
     for (let child of node.children) {
@@ -1534,7 +1540,7 @@ class LegendVisitor extends IVisitor {
     }
     node.isContainer = this.isContainer;
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     const defListNode = findFirstChild(node, "def-list");
     this.markVisited(defListNode);
@@ -1562,7 +1568,7 @@ class RefVisitor extends IVisitor {
       return;
     }
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     const labelNode = findFirstChild(node, "label");
     this.markVisited(labelNode);
@@ -1589,7 +1595,7 @@ class RefListVisitor extends IVisitor {
       return;
     }
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     let legendtxt = "";
     if (node) {
@@ -1614,7 +1620,7 @@ class DefListVisitor extends IVisitor {
 
     node.isContainer = this.isContainer;
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     let legendtxt = processDefList(node, this);
     writeLegend(node, legendtxt, this);
@@ -1634,7 +1640,7 @@ class TermSecVisitor extends IVisitor {
       return;
     }
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     if (checkIfComplexStructure(node)) {
       // contains notes-group etc --> splitt in to <paragraph> and <notes-group> etc
@@ -1685,7 +1691,7 @@ class InlineFormulaVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     const content = generateDisplayFormula(node);
     if (CONFIG.featureFlagUseLatex) {
@@ -1719,7 +1725,7 @@ class DispFormulaVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`${currentPath}: ${node.plaintext}`);
+
 
     const content = generateDisplayFormula(node);
 
@@ -1755,7 +1761,7 @@ class XrefVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`### ${currentPath}: ${node.plaintext}`);
+
 
     //internalLink
 
@@ -1784,7 +1790,7 @@ class IndexTermVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`### ${currentPath}: ${node.plaintext}`);
+
 
     // label, Title
     // Handle children
@@ -1808,7 +1814,7 @@ class NotesTypeRevisionDescVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     // loop over n <p> in <notes>
 
@@ -1881,7 +1887,7 @@ class ListVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     const listText = processList(node, this, 1, currentPath);
     if (listText != null) {
@@ -1906,7 +1912,7 @@ class SecTypeParagraph extends IVisitor {
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
 
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     node.isContainer = this.isContainer;
     node.isNormative = true;
@@ -1963,7 +1969,7 @@ class FigGroupVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     const labelNode = findFirstChild(node, "label");
     this.markVisited(labelNode);
@@ -2008,7 +2014,6 @@ class FigVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
 
     // label, caption, graphic,lengend
     //const fig_id = node.attributes["id"].replace("-", "_");
@@ -2024,6 +2029,7 @@ class FigVisitor extends IVisitor {
     //const legendNode = findFirstChild(node, "legend");
     //this.markVisited(legendNode);
     //const legenTitle = findFirstChild(legendNode, "title");
+
     var title = "";
     if (captionTitleNode) {
       title = processParagraph(captionTitleNode, this);
@@ -2031,6 +2037,20 @@ class FigVisitor extends IVisitor {
     //const title = captionTitleNode ? captionTitleNode.plaintext : "";
     const graphicNode = findFirstChild(node, "graphic");
     this.markVisited(graphicNode);
+
+    // check if graphicNode is missing or if there are multiple graphicNodes
+    if (!graphicNode) {
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.XML_STRUCTURE, "FigureNoGraphic", "id: " + node.customerId);
+    }
+    else {
+      let cnt = 0;
+      for (let child of node.children) {
+        cnt += child.name === "graphic" ? 1 : 0;
+        if (cnt > 1) {
+          CONFIG.logger.warn(TransformerLogger.CATEGORY.XML_STRUCTURE, "FigureToManyGraphics", "id: " + node.customerId);
+        }
+      }
+    }
 
     const legendNode = findFirstChild(node, "legend");
     this.markVisited(legendNode);
@@ -2101,7 +2121,7 @@ class NotesGroupVisitor extends IVisitor {
     var label = labelNode ? labelNode.plaintext : "";
     this.markVisited(labelNode);
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
     // loop through non-normative-note
     for (let child of node.children) {
       if (!this.isVisited(child)) {
@@ -2149,7 +2169,7 @@ class BoxedTextVisitor extends IVisitor {
     processIndexTerms(node, labelNode, this);
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     // loop through non-normative-note
     for (let child of node.children) {
@@ -2180,7 +2200,7 @@ class NonNormativeNoteVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
 
     const contenttype = node.attributes["content-type"]
       ? node.attributes["content-type"]
@@ -2230,7 +2250,7 @@ class StdMetaVisitor extends IVisitor {
 
     node.isContainer = this.isContainer;
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
     this.markVisited(node);
 
     var titleWrapNode = findNodeRecursively(
@@ -2255,7 +2275,7 @@ class StdMetaVisitor extends IVisitor {
       const stdXrefSupersedesNode = findFirstChild(node, "std_xref_supersedes");
 
       if (!stdXrefSupersedesNode) {
-        console.log("hh");
+
       }
 
       if (stdRefNode) {
@@ -2323,7 +2343,7 @@ class ParagraphVisitor extends IVisitor {
     }
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
     if (checkIfComplexStructure(node)) {
       // contains notes-group, etc --> splitt <paragraph>
       do {
@@ -2438,7 +2458,7 @@ class TableWrapVisitor extends IVisitor {
       return;
     }
     if (!node.attributes || !node.attributes["id"]) {
-      console.warn(`!!!!!: node has no customerId: ${node.customerId}`);
+
     }
     node.isContainer = this.isContainer;
     const table_id = node.attributes["id"]
@@ -2508,7 +2528,7 @@ class TableWrapVisitor extends IVisitor {
       this
     );
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
-    console.log(`vp: ${currentPath}: ${node.plaintext}`);
+
     //
     for (let child of node.children) {
       for (let child of node.children) {
@@ -2848,24 +2868,24 @@ class BitmarkTransformer {
           }
         })
         .on("error", (err) => {
-          console.error("Error parsing JSON:", err);
+
           reject(err);
         })
         .on("end", () => {
-          console.log("Completed parsing JSON.");
+
           onProgress('convert_to_bitmark', 100, null);
           // create and upload png files
           this.htmlTable2PNG
             .processFileListSynchronously(onProgress)
             .then(() => {
-              console.log("Verarbeitung abgeschlossen");
+
               // Schließe den Stream und resolve das Promise erst, wenn alles fertig ist
               this.otStream.end(() => {
                 resolve();
               });
             })
             .catch((error) => {
-              console.error("Fehler bei der Verarbeitung:", error);
+
               reject(error);
             });
         });

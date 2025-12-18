@@ -13,6 +13,7 @@ const app = express();
 const port = 3080;
 
 // Redirect console logs to file
+//fs.writeFileSync(path.join(__dirname, '..', 'server.log'), '');
 const logStream = fs.createWriteStream(path.join(__dirname, '..', 'server.log'), { flags: 'a' });
 const originalLog = console.log;
 const originalError = console.error;
