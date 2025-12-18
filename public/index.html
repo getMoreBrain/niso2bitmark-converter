@@ -318,7 +318,7 @@
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                 Datum</th>
                             <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                 Aktion</th>
                         </tr>
                     </thead>
@@ -706,6 +706,7 @@
             try {
                 const res = await fetch('api/upload', { method: 'POST', body: formData });
                 const data = await res.json();
+                console.log("Message: " + JSON.stringify(data));
 
                 if (res.ok) {
                     sessionData = {
@@ -766,6 +767,7 @@
                 });
 
                 const data = await res.json();
+                console.log("Message: " + JSON.stringify(data));
 
                 if (res.ok) {
                     // Update NormID from server
@@ -779,6 +781,7 @@
                     let msg = data.message;
                     if (data.messageKey) {
                         msg = t(data.messageKey, data.params || {});
+                        msg = msg + ":\n" + data.message
                     }
 
                     let errorHtml = `<div class="text-red-500 font-bold mb-4">❌ ${msg}</div>`;
@@ -1056,8 +1059,8 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         ${date}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                         <div class="flex items-center justify-end space-x-4">
+                    <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                         <div class="flex items-center justify-start space-x-4">
                             <a href="api/download/${ver.id}" class="text-primary hover:text-green-300 text-sm font-bold flex items-center" title="${t('download')} (Full)" onclick="event.stopPropagation()">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 ZIP (All)

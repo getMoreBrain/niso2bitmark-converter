@@ -34,9 +34,101 @@ function checkAndRotateLog() {
     }
 }
 
+// Housekeeping Config
+const WORK_DIR = path.join(__dirname, '..', 'work');
+const UPLOAD_DIR = path.join(__dirname, '..', 'upload');
+const IMAGES_DIR = path.join(__dirname, '..', 'public', 'images');
+
+const HOURS_WORK = 60;
+const HOURS_UPLOAD = 60;
+const HOURS_IMAGES = 160;
+
+let lastHousekeepingDate = null;
+
+function performHousekeeping() {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Check time window (02:00 - 03:00)
+    if (currentHour === 2) {
+        // Check if already run today
+        if (lastHousekeepingDate !== now.getDate()) {
+            console.log(`[HOUSEKEEPING] Starting daily cleanup at ${now.toISOString()}...`);
+            logToFile(`[HOUSEKEEPING] Starting daily cleanup...`);
+
+            try {
+                cleanDirectory(WORK_DIR, HOURS_WORK, 'dir');
+                cleanDirectory(UPLOAD_DIR, HOURS_UPLOAD, 'zip');
+                cleanDirectory(IMAGES_DIR, HOURS_IMAGES, 'file');
+
+                lastHousekeepingDate = now.getDate();
+                logToFile(`[HOUSEKEEPING] Cleanup completed successfully.`);
+            } catch (err) {
+                console.error('[HOUSEKEEPING] Error during cleanup:', err);
+                logToFile(`[HOUSEKEEPING] [ERROR] ${err.message}`);
+            }
+        }
+    }
+}
+
+function cleanDirectory(dirPath, maxHours, type) {
+    if (!fs.existsSync(dirPath)) return;
+
+    const files = fs.readdirSync(dirPath);
+    const now = Date.now();
+    const thresholdMs = maxHours * 60 * 60 * 1000;
+
+    files.forEach(file => {
+        const filePath = path.join(dirPath, file);
+        try {
+            const stats = fs.statSync(filePath);
+            const ageMs = now - stats.mtimeMs;
+
+            if (ageMs > thresholdMs) {
+                let shouldDelete = false;
+
+                if (type === 'dir' && stats.isDirectory()) {
+                    shouldDelete = true;
+                } else if (type === 'zip' && stats.isFile() && file.toLowerCase().endsWith('.zip')) {
+                    shouldDelete = true;
+                } else if (type === 'file' && stats.isFile()) {
+                    shouldDelete = true;
+                }
+
+                if (shouldDelete) {
+                    if (stats.isDirectory()) {
+                        fs.rmSync(filePath, { recursive: true, force: true });
+                    } else {
+                        fs.unlinkSync(filePath);
+                    }
+                    const msg = `[HOUSEKEEPING] Deleted ${type}: ${file} (Age: ${(ageMs / 3600000).toFixed(1)} hours)`;
+                    console.log(msg);
+                    logToFile(msg);
+                }
+            }
+        } catch (err) {
+            console.error(`[HOUSEKEEPING] Failed to process/delete ${file}:`, err);
+            logToFile(`[HOUSEKEEPING] [ERROR] Failed to delete ${file}: ${err.message}`);
+        }
+    });
+}
+
+function logToFile(message) {
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] ${message}\n`;
+    try {
+        fs.appendFileSync(LOG_FILE, logLine);
+    } catch (e) {
+        console.error('Failed to write to log file', e);
+    }
+}
+
 function logStatus() {
     // Check rotation before writing
     checkAndRotateLog();
+
+    // Perform Housekeeping Check
+    performHousekeeping();
 
     exec('pm2 jlist', (error, stdout, stderr) => {
         const timestamp = new Date().toISOString();
