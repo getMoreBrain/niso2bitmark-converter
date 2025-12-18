@@ -4,82 +4,82 @@ const path = require("path");
 const { randomUUID } = require("crypto");
 
 /**
- * MappingStore - Eine Klasse zur sicheren Verwaltung von customerId zu anchorId Mappings
- * mit Unterstützung für Caching, Locking und Fehlerbehandlung
+ * MappingStore - A class for secure management of customerId to anchorId mappings
+ * with support for caching, locking, and error handling
  */
 class MappingStore {
   /**
-   * Erstellt eine neue MappingStore-Instanz
-   * @param {string} filePath - Optional. Pfad zur Mapping-Datei. Standardwert: "./mappings.json"
+   * Creates a new MappingStore instance
+   * @param {string} filePath - Optional. Path to mapping file. Default: "./mappings.json"
    */
   constructor(filePath) {
     this.filePath = path.join(filePath, "customer2AnchorIdMappings.json");
     this.mappings = null;
     this.lockFile = `${this.filePath}.lock`;
-    this.lockId = randomUUID(); // Eindeutige ID für diesen Prozess
-    this.lastLoadTime = 0; // Für Caching: Zeitstempel der letzten Ladeoperation
-    this.lastModifiedTime = 0; // Für Caching: Zeitstempel der letzten Änderung der Datei
+    this.lockId = randomUUID(); // Unique ID for this process
+    this.lastLoadTime = 0; // For caching: Timestamp of last load operation
+    this.lastModifiedTime = 0; // For caching: Timestamp of last file modification
 
-    // Beim Erstellen einer Instanz nach veralteten Lock-Dateien suchen
+    // Check for stale lock files when creating an instance
     this._checkForStaleLock();
   }
 
   /**
-   * Überprüft beim Start, ob veraltete Lock-Dateien existieren
+   * Checks on start if stale lock files exist
    * @private
    */
   async _checkForStaleLock() {
     try {
-      // Synchrone Prüfung für bessere Stabilität
+      // Synchronous check for better stability
       const exists = fsSync.existsSync(this.lockFile);
 
       if (exists) {
         const stats = fsSync.statSync(this.lockFile);
         const lockAge = Date.now() - stats.mtime.getTime();
 
-        // Wenn der Lock älter als 5 Minuten ist, entfernen wir ihn automatisch
+        // If lock is older than 5 minutes, remove it automatically
         if (lockAge > 300000) {
           try {
-            // Lock-Inhalt lesen, um bessere Logeinträge zu haben
-            let lockContent = "nicht lesbar";
+            // Read lock content to have better log entries
+            let lockContent = "unreadable";
             try {
               lockContent = fsSync.readFileSync(this.lockFile, "utf8");
             } catch (readErr) {
               console.warn(
-                `Lock konnte nicht gelesen werden: ${readErr.message}`
+                `Lock could not be read: ${readErr.message}`
               );
             }
 
             console.warn(
-              `Alter Lock gefunden (${Math.round(
+              `Stale lock found (${Math.round(
                 lockAge / 1000
-              )}s) mit ID ${lockContent}, wird entfernt`
+              )}s) with ID ${lockContent}, removing`
             );
 
-            // Synchrones Löschen für bessere Stabilität
+            // Synchronous deletion for better stability
             fsSync.unlinkSync(this.lockFile);
-            console.log("Lock-Datei erfolgreich entfernt");
+            console.log("Lock file successfully removed");
           } catch (unlinkErr) {
             console.warn(
-              `Konnte alten Lock nicht entfernen: ${unlinkErr.message}`
+              `Could not remove stale lock: ${unlinkErr.message}`
             );
           }
         }
       }
     } catch (error) {
-      // Fehler beim Überprüfen des Locks ignorieren
-      console.warn("Fehler beim Überprüfen alter Lock-Dateien:", error.message);
+      // Ignore error checking lock
+      console.warn("Error checking stale lock files:", error.message);
     }
   }
 
   /**
-   * Hilfsfunktion zum Laden der Daten mit Caching-Funktionalität
-   * @param {boolean} force - Wenn true, wird der Cache ignoriert und die Datei neu geladen
-   * @returns {Object} - Die geladenen Mappings
+   * Helper function to load data with caching functionality
+   * @param {boolean} force - If true, cache is ignored and file is reloaded
+   * @returns {Object} - The loaded mappings
    */
   async loadMappings(force = false) {
     try {
-      // Prüfen, ob die Datei seit dem letzten Laden verändert wurde
+      // Check if file has changed since last load
       const fileExists = fsSync.existsSync(this.filePath);
 
       let shouldReload = force || !this.mappings;
@@ -92,55 +92,55 @@ class MappingStore {
       if (shouldReload) {
         if (fileExists) {
           try {
-            // Datei direkt synchrorn laden für bessere Stabilität
+            // Load file directly synchronously for better stability
             const data = fsSync.readFileSync(this.filePath, "utf8");
 
             try {
               this.mappings = JSON.parse(data);
-              console.log(`Mappings erfolgreich geladen aus ${this.filePath}`);
+              console.log(`Mappings successfully loaded from ${this.filePath}`);
             } catch (parseError) {
               console.error(
-                `Fehler beim Parsen der JSON-Daten: ${parseError.message}`
+                `Error parsing JSON data: ${parseError.message}`
               );
-              // Bei fehlerhaftem JSON eine neue leere Struktur erstellen
+              // Create new empty structure if JSON is invalid
               this.mappings = {};
             }
 
-            // Cache-Zeitstempel aktualisieren
+            // Update cache timestamp
             const stats = fsSync.statSync(this.filePath);
             this.lastModifiedTime = stats.mtimeMs;
             this.lastLoadTime = Date.now();
           } catch (readError) {
-            console.error(`Fehler beim Lesen der Datei: ${readError.message}`);
-            // Neue leere Mapping-Struktur
+            console.error(`Error reading file: ${readError.message}`);
+            // New empty mapping structure
             this.mappings = {};
           }
         } else {
-          // Datei existiert nicht, erstelle neue leere Mapping-Struktur
+          // File does not exist, create new empty mapping structure
           this.mappings = {};
           await this.saveMappings();
         }
       }
     } catch (error) {
-      console.error(`Allgemeiner Fehler beim Laden: ${error.message}`);
-      // Bei Fehler eine neue leere Struktur erstellen
+      console.error(`General error during load: ${error.message}`);
+      // Create new empty structure on error
       this.mappings = {};
     }
     return this.mappings;
   }
 
   /**
-   * Führt eine Operation mit wiederholten Versuchen aus
+   * Executes an operation with retries
    * @private
-   * @param {Function} operation - Die auszuführende asynchrone Operation
-   * @param {number} maxRetries - Maximale Anzahl an Wiederholungsversuchen
-   * @param {string} errorMsg - Fehlermeldung bei endgültigem Fehlschlag
-   * @returns {Promise<any>} - Das Ergebnis der Operation
+   * @param {Function} operation - The async operation to execute
+   * @param {number} maxRetries - Maximum number of retries
+   * @param {string} errorMsg - Error message on final failure
+   * @returns {Promise<any>} - The result of the operation
    */
   async _retryOperation(
     operation,
     maxRetries = 3,
-    errorMsg = "Operation fehlgeschlagen"
+    errorMsg = "Operation failed"
   ) {
     let lastError = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -149,81 +149,81 @@ class MappingStore {
       } catch (error) {
         lastError = error;
         console.warn(
-          `Versuch ${attempt}/${maxRetries} fehlgeschlagen: ${error.message}`
+          `Attempt ${attempt}/${maxRetries} failed: ${error.message}`
         );
 
         if (attempt < maxRetries) {
-          // Exponentielles Backoff: 100ms, 200ms, 400ms, ...
+          // Exponential backoff: 100ms, 200ms, 400ms, ...
           const delay = Math.min(100 * Math.pow(2, attempt - 1), 3000);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
     throw new Error(
-      `${errorMsg} nach ${maxRetries} Versuchen: ${lastError.message}`
+      `${errorMsg} after ${maxRetries} attempts: ${lastError.message}`
     );
   }
 
   /**
-   * Hilfsfunktion zum Speichern der Daten - vereinfachte robuste Version
+   * Helper function to save data - simplified robust version
    */
   async saveMappings() {
     try {
-      // Sicherstellen, dass das Verzeichnis existiert
+      // Ensure directory exists
       const dirPath = path.dirname(this.filePath);
 
       try {
-        // Synchron prüfen und erstellen für bessere Zuverlässigkeit
+        // Synchronous check and create for better reliability
         if (!fsSync.existsSync(dirPath)) {
           fsSync.mkdirSync(dirPath, { recursive: true });
         }
       } catch (dirErr) {
         console.warn(
-          `Warnung beim Prüfen/Erstellen des Verzeichnisses: ${dirErr.message}`
+          `Warning checking/creating directory: ${dirErr.message}`
         );
       }
 
-      // Versuche direkt synchron zu speichern - robusteste Methode
-      console.log(`Speichere Mappings in ${this.filePath}...`);
+      // Try to save directly synchronously - most robust method
+      console.log(`Saving mappings to ${this.filePath}...`);
 
       try {
-        // Direkt synchron speichern
+        // Save directly synchronously
         const jsonString = JSON.stringify(this.mappings, null, 2);
         fsSync.writeFileSync(this.filePath, jsonString, "utf8");
 
-        // Validierung - Prüfen ob Datei geschrieben wurde
+        // Validation - Check if file was written
         if (!fsSync.existsSync(this.filePath)) {
           throw new Error(
-            "Datei wurde nicht erfolgreich geschrieben (existiert nicht)"
+            "File was not successfully written (does not exist)"
           );
         }
 
-        // Dateiinhalt validieren
+        // Validate file content
         const fileSize = fsSync.statSync(this.filePath).size;
         if (fileSize === 0) {
-          throw new Error("Datei wurde geschrieben, ist aber leer");
+          throw new Error("File was written but is empty");
         }
 
-        console.log(`Mappings erfolgreich gespeichert (${fileSize} Bytes)`);
+        console.log(`Mappings successfully saved (${fileSize} Bytes)`);
 
-        // Aktualisiere die Zeitstempel
+        // Update timestamps
         const stats = fsSync.statSync(this.filePath);
         this.lastModifiedTime = stats.mtimeMs;
       } catch (writeError) {
-        console.error(`Fehler beim Speichern: ${writeError.message}`);
+        console.error(`Error saving: ${writeError.message}`);
         throw writeError;
       }
     } catch (error) {
-      console.error(`Kritischer Fehler beim Speichern: ${error.message}`);
+      console.error(`Critical error saving: ${error.message}`);
       console.error("Stack-Trace:", error.stack);
-      throw error; // Fehler weiterwerfen, damit die aufrufende Methode reagieren kann
+      throw error; // Rethrow error so calling method can react
     }
   }
 
   /**
-   * Verbesserte Locking-Implementierung mit exponentiellem Backoff und synchronem Dateizugriff
-   * @param {number} timeout - Timeout in Millisekunden
-   * @returns {Promise<boolean>} - True, wenn Lock erfolgreich erworben wurde
+   * Improved locking implementation with exponential backoff and synchronous file access
+   * @param {number} timeout - Timeout in milliseconds
+   * @returns {Promise<boolean>} - True if lock was successfully acquired
    */
   async acquireLock(timeout = 5000) {
     const startTime = Date.now();
@@ -231,136 +231,136 @@ class MappingStore {
 
     while (true) {
       try {
-        // Versuche die Lock-Datei mit unserer Prozess-ID zu erstellen
+        // Attempt to create lock file with our process ID
         try {
           fsSync.writeFileSync(this.lockFile, this.lockId, { flag: "wx" });
-          console.log(`Lock erworben mit ID ${this.lockId}`);
+          console.log(`Lock acquired with ID ${this.lockId}`);
           return true;
         } catch (writeError) {
           if (writeError.code !== "EEXIST") {
-            throw writeError; // Andere Fehler weiterwerfen
+            throw writeError; // Rethrow other errors
           }
-          // Bei EEXIST weitermachen mit Lock-Überprüfung
+          // Continue with lock check on EEXIST
         }
 
-        // Wenn die Datei bereits existiert
+        // If file already exists
         try {
           const stats = fsSync.statSync(this.lockFile);
           const lockAge = Date.now() - stats.mtime.getTime();
 
-          // Lock älter als 30 Sekunden? Könnte ein "hängengebliebener" Lock sein
+          // Lock older than 30 seconds? Could be a 'stuck' lock
           if (lockAge > 30000) {
             try {
-              // Lies die Lock-ID bevor wir den Lock entfernen
-              let existingLockId = "nicht lesbar";
+              // Read lock ID before removing lock
+              let existingLockId = "unreadable";
               try {
                 existingLockId = fsSync.readFileSync(this.lockFile, "utf8");
               } catch (readErr) {
                 console.warn(
-                  `Lock-ID konnte nicht gelesen werden: ${readErr.message}`
+                  `Lock ID could not be read: ${readErr.message}`
                 );
               }
 
               console.warn(
-                `Entferne alten Lock (${Math.round(
+                `Remove stale lock (${Math.round(
                   lockAge / 1000
-                )}s) mit ID ${existingLockId}`
+                )}s) with ID ${existingLockId}`
               );
 
               fsSync.unlinkSync(this.lockFile);
-              console.log("Alter Lock erfolgreich entfernt");
+              console.log("Stale lock successfully removed");
 
-              // Kurzer Delay bevor wir den nächsten Versuch starten
+              // Short delay before starting next attempt
               await new Promise((resolve) => setTimeout(resolve, 100));
-              continue; // Starte die nächste Schleifeniteration direkt
+              continue; // Start next loop iteration directly
             } catch (unlinkError) {
               console.warn(
-                `Problem beim Entfernen des alten Locks: ${unlinkError.message}`
+                `Problem removing stale lock: ${unlinkError.message}`
               );
             }
           }
         } catch (statError) {
-          console.warn(`Konnte Lock-Datei nicht prüfen: ${statError.message}`);
+          console.warn(`Could not check lock file: ${statError.message}`);
         }
 
-        // Timeout prüfen
+        // Check timeout
         if (Date.now() - startTime > timeout) {
           throw new Error(
-            `Timeout (${timeout}ms) beim Versuch, die Lock-Datei zu erstellen`
+            `Timeout (${timeout}ms) attempting to create lock file`
           );
         }
 
-        // Exponentielles Backoff für Wiederholungsversuche
+        // Exponential backoff for retries
         retryCount++;
         const delay = Math.min(Math.pow(2, retryCount) * 25, 1000); // 50ms, 100ms, 200ms... max 1000ms
 
         await new Promise((resolve) => setTimeout(resolve, delay));
       } catch (outerError) {
         console.error(
-          `Unerwarteter Fehler beim Lock-Erwerb: ${outerError.message}`
+          `Unexpected error acquiring lock: ${outerError.message}`
         );
 
-        // Timeout prüfen
+        // Check timeout
         if (Date.now() - startTime > timeout) {
           throw new Error(
-            `Timeout (${timeout}ms) beim Versuch, die Lock-Datei zu erstellen: ${outerError.message}`
+            `Timeout (${timeout}ms) attempting to create lock file: ${outerError.message}`
           );
         }
 
-        // Bei unerwarteten Fehlern kurz warten und erneut versuchen
+        // Wait briefly and retry on unexpected errors
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
     }
   }
 
   /**
-   * Lock freigeben mit robuster synchroner Implementierung
+   * Release lock with robust synchronous implementation
    */
   async releaseLock() {
     try {
-      // Prüfen, ob die Lock-Datei existiert
+      // Check if lock file exists
       const exists = fsSync.existsSync(this.lockFile);
 
       if (exists) {
-        // Prüfen, ob es unser eigener Lock ist
+        // Check if it is our own lock
         try {
           const lockContent = fsSync.readFileSync(this.lockFile, "utf8");
 
           if (lockContent === this.lockId) {
             fsSync.unlinkSync(this.lockFile);
-            console.log("Lock erfolgreich freigegeben");
+            console.log("Lock successfully released");
           } else {
             console.warn(
-              `Lock gehört zu einem anderen Prozess (${lockContent}), nicht entfernt`
+              `Lock belongs to another process (${lockContent}), not removed`
             );
           }
         } catch (readUnlinkError) {
           console.warn(
-            `Problem mit dem Lock (wird trotzdem gelöscht): ${readUnlinkError.message}`
+            `Problem with lock (will be deleted anyway): ${readUnlinkError.message}`
           );
-          // Bei Problemen trotzdem versuchen zu löschen
+          // Try to delete anyway on problems
           try {
             fsSync.unlinkSync(this.lockFile);
           } catch (forceUnlinkError) {
             console.warn(
-              `Konnte Lock nicht entfernen: ${forceUnlinkError.message}`
+              `Could not remove lock: ${forceUnlinkError.message}`
             );
           }
         }
       }
     } catch (error) {
-      // Nur eine Warnung ausgeben, nicht als kritischer Fehler
-      console.warn("Hinweis beim Freigeben des Locks:", error.message);
+      // Only issue a warning, not as critical error
+      console.warn("Note when releasing lock:", error.message);
     }
   }
 
   /**
-   * Mapping hinzufügen oder aktualisieren
-   * @param {string} customerId - Die CustomerId
-   * @param {string} anchorId - Die AnchorId
-   * @param {string} parentAnchorId - Die ParentAnchorId
-   * @param {string} [remark] - Optional. Bemerkung für diese Zuordnung
-   * @returns {Object} - Ergebnisobjekt {success: boolean, customerId?, anchorId?, parentAnchorid,remark?, message?, updated?: boolean}
+   * Add or update mapping
+   * @param {string} customerId - The CustomerId
+   * @param {string} anchorId - The AnchorId
+   * @param {string} parentAnchorId - The ParentAnchorId
+   * @param {string} [remark] - Optional. Remark for this mapping
+   * @returns {Object} - Result object {success: boolean, customerId?, anchorId?, parentAnchorid,remark?, message?, updated?: boolean}
    */
   async addMapping(customerId, anchorId, parentAnchorId, remark = "") {
     let lockAcquired = false;
@@ -369,24 +369,24 @@ class MappingStore {
       await this.acquireLock();
       lockAcquired = true;
 
-      // Force reload für aktuelle Daten
+      // Force reload for current data
       await this.loadMappings(true);
 
-      // Prüfen ob bereits ein Mapping existiert
+      // Check if mapping already exists
       const existingMapping = this.mappings[customerId];
       const isUpdate = !!existingMapping;
 
-      // Wenn ein existierendes Mapping gefunden wurde und es im neuen Format ist (Objekt statt String)
+      // If existing mapping found and is in new format (Object instead of String)
       let existingAnchorId = "";
       let existingParentAnchorId = "";
       let existingRemark = "";
 
       if (isUpdate) {
         if (typeof existingMapping === "string") {
-          // Altes Format: String
+          // Old format: String
           existingAnchorId = existingMapping;
         } else if (typeof existingMapping === "object") {
-          // Neues Format: Objekt mit anchorId und remark
+          // New format: Object with anchorId and remark
           existingAnchorId = existingMapping.anchorId;
           existingParentAnchorId = existingMapping.parentAnchorId
             ? existingMapping.parentAnchorId
@@ -395,7 +395,7 @@ class MappingStore {
         }
       }
 
-      // Mapping hinzufügen oder aktualisieren im neuen Format (Objekt mit anchorId und remark)
+      // Add or update mapping in new format (Object with anchorId and remark)
       this.mappings[customerId] = {
         anchorId: anchorId,
         parentAnchorId: parentAnchorId ? parentAnchorId : null,
@@ -406,7 +406,7 @@ class MappingStore {
 
       if (isUpdate) {
         console.log(
-          `Mapping für CustomerId ${customerId} wurde aktualisiert von ${existingAnchorId} auf ${anchorId}`
+          `Mapping for CustomerId ${customerId} updated from ${existingAnchorId} to ${anchorId}`
         );
         return {
           success: true,
@@ -415,7 +415,7 @@ class MappingStore {
           parentAnchorId,
           remark,
           updated: true,
-          message: `Mapping für CustomerId ${customerId} wurde von ${existingAnchorId} auf ${anchorId} aktualisiert`,
+          message: `Mapping for CustomerId ${customerId} updated from ${existingAnchorId} to ${anchorId}`,
         };
       } else {
         return {
@@ -437,10 +437,10 @@ class MappingStore {
   }
 
   /**
-   * Mapping aktualisieren
-   * @param {string} customerId - Die CustomerId des zu aktualisierenden Mappings
-   * @param {string} newAnchorId - Die neue AnchorId
-   * @returns {Object} - Ergebnisobjekt {success: boolean, customerId?, anchorId?, message?}
+   * Update mapping
+   * @param {string} customerId - The CustomerId of the mapping to update
+   * @param {string} newAnchorId - The new AnchorId
+   * @returns {Object} - Result object {success: boolean, customerId?, anchorId?, message?}
    */
   /*
   async updateMapping(customerId, newAnchorId) {
@@ -450,17 +450,17 @@ class MappingStore {
       await this.acquireLock();
       lockAcquired = true;
 
-      // Force reload für aktuelle Daten
+      // Force reload for current data
       await this.loadMappings(true);
 
-      // Prüfen ob customerId existiert
+      // Check if customerId exists
       if (!this.mappings[customerId]) {
-        throw new Error(`CustomerId ${customerId} existiert nicht`);
+        throw new Error(`CustomerId ${customerId} does not exist`);
       }
 
-      // Keine Prüfung auf doppelte anchorIds mehr notwendig, da diese mehrfach vorkommen dürfen
+      // No check for duplicate anchorIds necessary anymore, as they may occur multiple times
 
-      // Neue Zuordnung erstellen
+      // Create new assignment
       this.mappings[customerId] = newAnchorId;
 
       await this.saveMappings();
@@ -475,9 +475,9 @@ class MappingStore {
   }
 */
   /**
-   * Mapping löschen
-   * @param {string} customerId - Die CustomerId des zu löschenden Mappings
-   * @returns {Object} - Ergebnisobjekt {success: boolean, message?}
+   * Delete mapping
+   * @param {string} customerId - CustomerId to delete
+   * @returns {Object} - Result object {success: boolean, message?}
    */
   async deleteMapping(customerId) {
     let lockAcquired = false;
@@ -486,21 +486,21 @@ class MappingStore {
       await this.acquireLock();
       lockAcquired = true;
 
-      // Force reload für aktuelle Daten
+      // Force reload for current data
       await this.loadMappings(true);
 
-      // Prüfen ob customerId existiert
+      // Check if customerId exists
       if (!this.mappings[customerId]) {
-        throw new Error(`CustomerId ${customerId} existiert nicht`);
+        throw new Error(`CustomerId ${customerId} does not exist`);
       }
 
-      // Mapping löschen
+      // Delete mapping
       delete this.mappings[customerId];
 
       await this.saveMappings();
       return {
         success: true,
-        message: `Mapping für ${customerId} wurde gelöscht`,
+        message: `Mapping for ${customerId} deleted`,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -512,7 +512,7 @@ class MappingStore {
   }
 
   /**
-   * Hilfsfunktion für synchrones Laden der Mappings
+   * Helper function for synchronous loading of mappings
    * @private
    */
   _loadMappingsSync() {
@@ -530,7 +530,7 @@ class MappingStore {
         }
       } catch (error) {
         console.error(
-          `Fehler beim synchronen Laden der Mappings: ${error.message}`
+          `Error synchronously loading mappings: ${error.message}`
         );
         this.mappings = {};
       }
@@ -539,9 +539,9 @@ class MappingStore {
   }
 
   /**
-   * Mapping abrufen nach customerId
-   * @param {string} customerId - Die zu suchende CustomerId
-   * @returns {Object|null} - Das gefundene Mapping oder null
+   * Get mapping by customerId
+   * @param {string} customerId - CustomerId to search for
+   * @returns {Object|null} - Found mapping or null
    */
   getByCustomerId(customerId) {
     this._loadMappingsSync();
@@ -550,9 +550,9 @@ class MappingStore {
 
     if (!mapping) return null;
 
-    // Unterstützt sowohl altes Format (String) als auch neues Format (Objekt)
+    // Supports both old format (String) and new format (Object)
     if (typeof mapping === "string") {
-      // Altes Format: String (nur anchorId)
+      // Old format: String (anchorId only)
       return {
         customerId: extractedCustomerId,
         anchorId: mapping,
@@ -560,7 +560,7 @@ class MappingStore {
         remark: "",
       };
     } else {
-      // Neues Format: Objekt mit anchorId, parentAnchorId und remark
+      // New format: Object with anchorId, parentAnchorId and remark
       return {
         customerId: extractedCustomerId,
         anchorId: mapping.anchorId,
@@ -576,14 +576,14 @@ class MappingStore {
     }
 
     let customerId = input;
-    // Überprüfung, ob es sich um einen komplexen xlink:href-String handelt
+    // Check if it is a complex xlink:href string
     if (input.includes("fscxeditor://xeditordocument/")) {
-      // Versuche die ID aus dem xpath-Parameter zu extrahieren (zwischen [local-name()='id' und '])
+      // Try to extract ID from xpath parameter (between [local-name()='id' and '])
       const idRegex = /\[local-name\(\)='id'[^\]]*'([^']*?)'\]/;
       const idMatch = input.match(idRegex);
 
       if (idMatch && idMatch[1]) {
-        // Wenn eine spezifische ID im xpath gefunden wurde, verwenden wir diese
+        // If specific ID found in xpath, use it
         customerId = idMatch[1].trim();
       }
     }
@@ -592,26 +592,26 @@ class MappingStore {
   }
 
   /**
-   * Mapping abrufen nach anchorId
-   * @param {string} anchorId - Die zu suchende AnchorId
-   * @returns {Array<Object>} - Array mit gefundenen Mappings oder leeres Array
+   * Get mapping by anchorId
+   * @param {string} anchorId - AnchorId to search for
+   * @returns {Array<Object>} - Array with found mappings or empty array
    */
   getByAnchorId(anchorId) {
     this._loadMappingsSync();
 
-    // Da anchorId mehrfach vorkommen kann, müssen wir alle Vorkommen finden
+    // Since anchorId can occur multiple times, find all occurrences
     const results = [];
     for (const [customerId, mapping] of Object.entries(this.mappings)) {
-      // Unterstützt sowohl altes Format (String) als auch neues Format (Objekt)
+      // Supports both old format (String) and new format (Object)
       let currentAnchorId, parentAnchorId, remark;
 
       if (typeof mapping === "string") {
-        // Altes Format
+        // Old format
         currentAnchorId = mapping;
         parentAnchorId = null;
         remark = "";
       } else {
-        // Neues Format
+        // New format
         currentAnchorId = mapping.anchorId;
         parentAnchorId = mapping.parentAnchorId || null;
         remark = mapping.remark || "";
@@ -630,16 +630,16 @@ class MappingStore {
   }
 
   /**
-   * Alle Mappings abrufen
-   * @returns {Array<Object>} - Array aller Mappings
+   * Get all mappings
+   * @returns {Array<Object>} - Array of all mappings
    */
   getAllMappings() {
     this._loadMappingsSync();
 
     return Object.entries(this.mappings).map(([customerId, mapping]) => {
-      // Unterstützt sowohl altes Format (String) als auch neues Format (Objekt)
+      // Supports both old format (String) and new format (Object)
       if (typeof mapping === "string") {
-        // Altes Format
+        // Old format
         return {
           customerId,
           anchorId: mapping,
@@ -647,7 +647,7 @@ class MappingStore {
           remark: "",
         };
       } else {
-        // Neues Format
+        // New format
         return {
           customerId,
           anchorId: mapping.anchorId,
@@ -659,35 +659,35 @@ class MappingStore {
   }
 
   /**
-   * Prüfen ob ein Mapping existiert
-   * @param {string} customerId - Optional. Die CustomerId
-   * @param {string} anchorId - Optional. Die AnchorId
-   * @returns {boolean} - True, wenn das Mapping existiert
+   * Check if a mapping exists
+   * @param {string} customerId - Optional. CustomerId
+   * @param {string} anchorId - Optional. AnchorId
+   * @returns {boolean} - True if mapping exists
    */
   exists(customerId, anchorId) {
     this._loadMappingsSync();
 
-    // Wenn nur customerId angegeben wurde
+    // If only customerId is specified
     if (customerId && !anchorId) {
       return !!this.mappings[customerId];
     }
 
-    // Wenn nur anchorId angegeben wurde
+    // If only anchorId is specified
     if (!customerId && anchorId) {
-      // Suche nach der anchorId in allen Werten
+      // Search for anchorId in all values
       for (const mapping of Object.values(this.mappings)) {
         if (typeof mapping === "string") {
-          // Altes Format
+          // Old format
           if (mapping === anchorId) return true;
         } else {
-          // Neues Format
+          // New format
           if (mapping.anchorId === anchorId) return true;
         }
       }
       return false;
     }
 
-    // Wenn beide angegeben wurden
+    // If both are specified
     const mapping = this.mappings[customerId];
     if (!mapping) return false;
 

@@ -168,7 +168,7 @@ class MappingStoreFast {
             remark: remark,
         };
         this.isDirty = true; // Mark as needing save
-        console.log(`Mapping added/updated: isUpdate ${isUpdate}, customerId ${customerId}, anchorId ${anchorId}, parentAnchorId ${parentAnchorId}, remark ${remark}`);
+        //console.log(`Mapping added/updated: isUpdate ${isUpdate}, customerId ${customerId}, anchorId ${anchorId}, parentAnchorId ${parentAnchorId}, remark ${remark}`);
 
         // Return result structure (compatible with MappingStoreNoLock)
         return {

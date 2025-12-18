@@ -5,15 +5,15 @@ const path = require("path");
 const Utils = require("./utils.js");
 
 /**
- * Eine Klasse zum Generieren und Verarbeiten von Inline-Grafiken.
+ * A class for generating and processing inline graphics.
  */
 class InlineGraphicBuilder {
   /**
-   * Erstellt eine neue Instanz des InlineGraphicBuilder.
+   * Creates a new instance of InlineGraphicBuilder.
    *
-   * @param {string} localRessourcePath - Der Pfad zum Ressourcenverzeichnis
-   * @param {string} uploadUrl - Die URL zum Hochladen der Grafiken
-   * @param {string} ressourceBaseUrl - Die Basis-URL für den Zugriff auf hochgeladene Ressourcen
+   * @param {string} localRessourcePath - The path to the resource directory
+   * @param {string} uploadUrl - The URL for uploading the graphics
+   * @param {string} ressourceBaseUrl - The base URL for accessing uploaded resources
    */
   constructor(localRessourcePath, uploadUrl, ressourceBaseUrl) {
     this.ressourcePath = localRessourcePath;
@@ -22,10 +22,10 @@ class InlineGraphicBuilder {
   }
 
   /**
-   * Verarbeitet eine Inline-Grafik.
+   * Processes an inline graphic.
    *
-   * @param {Object} inlineGraphicNode - Der Knoten mit den Grafikinformationen
-   * @returns {string} - Der generierte Bitmark-Code für die Grafik
+   * @param {Object} inlineGraphicNode - The node with the graphic information
+   * @returns {string} - The generated Bitmark code for the graphic
    */
   build(inlineGraphicNode) {
     try {
@@ -39,8 +39,8 @@ class InlineGraphicBuilder {
       uploadFilename =
         "inlineGraphic_" + uploadFilename.replace(/[./]/g, "-") + fileExtension;
 
-      // Hochladen der Datei
-      // Hochladen der Datei -> Jetzt kopieren in public Ordner
+      // Uploading file
+      // Uploading file -> Now copying to public folder
       Utils.publishImage(filename, uploadFilename);
       const url = this.ressourceBaseUrl + uploadFilename;
 

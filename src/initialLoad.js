@@ -28,10 +28,10 @@ const broadcast = (data) => {
     }
 };
 /**
-   * Sucht rekursiv nach metadata.xml im Verzeichnis nisoFilePath und extrahiert den Wert von <name>.
-   * Das File muss im GLEICHEN Verzeichnis liegen wie content.xml.
-   * @param {string} nisoFilePath - Pfad zur content.xml (oder Verzeichnis)
-   * @returns {string|null} - Der gefundene Name oder null
+   * Recursively looks for metadata.xml in the directory nisoFilePath and extracts the value of <name>.
+   * The file must be in the SAME directory as content.xml.
+   * @param {string} nisoFilePath - Path to content.xml (or directory)
+   * @returns {string|null} - The found name or null
    */
 function getNormId(nisoFilePath) {
     try {
@@ -68,14 +68,14 @@ function getNormId(nisoFilePath) {
 
         if (metadataPath) {
             const content = fs.readFileSync(metadataPath, "utf8");
-            // Einfacher Regex für <name>...</name>
+            // Simple Regex for <name>...</name>
             const match = content.match(/<name>(.*?)<\/name>/);
             if (match && match[1]) {
                 return match[1].trim();
             }
         }
     } catch (e) {
-        console.error("Fehler in getNormId:", e);
+        console.error("Error in getNormId:", e);
     }
     return null;
 }

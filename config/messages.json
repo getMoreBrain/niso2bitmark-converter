@@ -299,6 +299,12 @@
             "en": "Failed",
             "fr": "Échoué",
             "it": "Fallito"
+        },
+        "btn_download_findings": {
+            "de": "Findings herunterladen",
+            "en": "Download Findings",
+            "fr": "Télécharger les Findings",
+            "it": "Scarica Findings"
         }
     },
     "infos": {

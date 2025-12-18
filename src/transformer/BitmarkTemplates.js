@@ -1,6 +1,6 @@
 "use strict";
 /*
-[%.1 item][%.2 lead]  - lead muss direkt nach item kommen, 
+[%.1 item][%.2 lead]  - lead must come directly after item, 
 [!instruction]
 */
 

@@ -40,8 +40,8 @@ class CounterStructure {
 
     this.entryTemplate = {
       index: 0,
-      originalPath: null, // originaler Pfad
-      structuralPath: null, // pfad bestehend aus strukturierenden Elementen
+      originalPath: null, // original path
+      structuralPath: null, // path consisting of structural elements
       depth: 0,
       level1: 0,
       level2: 0,
@@ -55,15 +55,15 @@ class CounterStructure {
       level10: 0,
       elementCounter: { ...this.counterElements },
     };
-    // Initialisiere structureGrid als Array (flache Liste) von Einträgen
+    // Initialize structureGrid as array (flat list) of entries
     this.structureGrid = [];
   }
 
   /**
-   * Erhöht den Counter für einen bestimmten nodeType im letzten Eintrag für den übergebenen Pfad
-   * @param {string} structuralPath - Der strukturelle Pfad für den Eintrag
-   * @param {string} nodeType - Der Typ des Knotens, dessen Zähler erhöht werden soll
-   * @returns {number} - Der neue Zählerstand
+   * Increments the counter for a specific nodeType in the last entry for the given path
+   * @param {string} structuralPath - The structural path for the entry
+   * @param {string} nodeType - The type of the node whose counter should be incremented
+   * @returns {number} - The new counter value
    */
   incrementCounter(structuralPath, nodeType) {
     // Find the entry with the given structural path or create a new one
@@ -81,16 +81,16 @@ class CounterStructure {
   }
 
   dumpStructureGrid() {
-    // Konvertiere die Struktur in einen JSON-String
+    // Convert structure to JSON string
     const jsonString = JSON.stringify(this.structureGrid, null, 2);
-    // Schreibe den JSON-String in eine Datei
+    // Write JSON string to file
     //fs.writeFileSync("structureGrid.json", jsonString, "utf8");
     console.log(jsonString);
   }
   /**
-   * Erhöht den Level-Zähler für den übergebenen Pfad
-   * @param {string} structuralPath - Der strukturelle Pfad für den Eintrag
-   * @returns {number} - Der neue Level-Zählerstand
+   * Increments the level counter for the given path
+   * @param {string} structuralPath - The structural path for the entry
+   * @returns {number} - The new level counter value
    */
   incrementLevel(structuralPath, originalPath, nodeType) {
     const newDepth = this.calculateDepth(structuralPath);
@@ -99,27 +99,27 @@ class CounterStructure {
     if (this.structureGrid.length > 0) {
       lastEntry = this.structureGrid[this.structureGrid.length - 1];
       if (newDepth == lastEntry.depth) {
-        // Wenn der letzte Eintrag die gleiche Tiefe hat, dann, auf gleichem Level bleiben und den Zähler erhöhen
+        // If last entry has same depth, stay on same level and increment counter
         parentEntry = lastEntry;
       } else if (newDepth < lastEntry.depth) {
-        // Wenn der letzte Eintrag eine grössere Tiefe hat, dann suche den letzten Eintrag mit der gleichen Tiefe
+        // If last entry has greater depth, find last entry with same depth
         parentEntry = this.findLastEntryByDepth(newDepth);
         let d = newDepth;
         while (!parentEntry && d > 0) {
-          // Wenn kein Eintrag gefunden wurde, gehe eine Ebene höher solange bis ein Eintrag gefunden wird
+          // If no entry found, go up one level until entry is found
           d--;
           parentEntry = this.findLastEntryByDepth(d);
         }
-        // Wenn der letzte Eintrag eine kleinere Tiefe hat, dann gehe eine Ebene höher
+        // If last entry has smaller depth, go up one level
       } else {
-        // Wenn der letzte Eintrag eine größere Tiefe hat, dann gehe eine Ebene tiefer
+        // If last entry has greater depth, go down one level
         parentEntry = lastEntry;
       }
     }
-    // erstelle einen neuen Eintrag, Basierend auf dem letzten Eintrag
+    // Create new entry based on last entry
     const newEntry = {
       ...this.entryTemplate,
-      index: this.structureGrid.length, // Verwende die Länge des Arrays als Index
+      index: this.structureGrid.length, // Use array length as index
       originalPath: originalPath,
       structuralPath: structuralPath,
       depth: newDepth,
@@ -135,27 +135,27 @@ class CounterStructure {
       level10: parentEntry ? parentEntry.level10 : 0,
       elementCounter: { ...this.counterElements },
     };
-    // Füge den neuen Eintrag zur Liste hinzu
+    // Add new entry to list
     this.structureGrid.push(newEntry);
     if (parentEntry && newDepth > parentEntry.depth) {
-      // Wenn die neue Tiefe grösser ist, dann erstelle einen neuen Eintrag auf Basis der letzten Eintrags
+      // If new depth is greater, create new entry based on last entry
       let ix = parentEntry.depth + 1;
       while (ix <= newDepth) {
         newEntry[`level${ix}`] = 1;
         ix++;
       }
     } else if (parentEntry && parentEntry.depth === newDepth) {
-      // Wenn die Tiefe übereinstimmt, dann erhöhe den Zähler für die aktuelle Tiefe
+      // If depth matches, increment counter for current depth
       newEntry[`level${newDepth}`] = parentEntry[`level${newDepth}`] + 1;
     } else {
-      // Wenn kein passender Eintrag gefunden wurde, setze den Zähler auf 1
+      // If no matching entry found, set counter to 1
       newEntry[`level${newDepth}`] = 1;
     }
     return this.formatedAdress(newEntry, nodeType);
   }
   formatedAdress(entry, nodeType) {
     let result = `${nodeType}_`;
-    // Iteriere über alle Level und füge sie zum Ergebnis hinzu
+    // Iterate over all levels and add to result
     let firstEl = true;
     for (let i = 1; i <= 10; i++) {
       if (entry[`level${i}`] === 0) {
@@ -176,47 +176,47 @@ class CounterStructure {
     return structuralPath.split("/").filter((part) => part.length > 0).length;
   }
   /**
-   * Findet den letzten (neuesten) Eintrag für den übergebenen Pfad oder erstellt einen neuen Eintrag
-   * @param {string} structuralPath - Der strukturelle Pfad für den Eintrag
-   * @returns {Object} - Der gefundene oder neu erstellte Eintrag
+   * Finds last (newest) entry for given path or creates new entry
+   * @param {string} structuralPath - The structural path for the entry
+   * @returns {Object} - The found or newly created entry
    */
   findLastEntryByPath(structuralPath) {
-    // Finde alle Einträge mit dem angegebenen structuralPath
+    // Find all entries with given structuralPath
     const matchingEntries = this.structureGrid.filter(
       (entry) => entry.structuralPath === structuralPath
     );
     if (matchingEntries.length === 0) {
-      return null; // kein Eintrag gefunden
+      return null; // no entry found
     }
-    // Sortiere die passenden Einträge nach Index (absteigend) und gib den neuesten zurück
+    // Sort matching entries by index (descending) and return newest
     return matchingEntries.sort((a, b) => b.index - a.index)[0];
   }
   /**
-   * Findet den letzten (neuesten) Eintrag für den übergebenen Depth oder erstellt einen neuen Eintrag
-   * @param {int} depth - Die Tiefe des Eintrags
-   * @returns {Object} - Der gefundene oder neu erstellte Eintrag
+   * Finds last (newest) entry for given Depth or creates new entry
+   * @param {int} depth - The depth of the entry
+   * @returns {Object} - The found or newly created entry
    */
   findLastEntryByDepth(depth) {
-    // Finde alle Einträge mit dem angegebenen structuralPath
+    // Find all entries with given structuralPath
     const matchingEntries = this.structureGrid.filter(
       (entry) => entry.depth === depth
     );
 
     if (matchingEntries.length === 0) {
-      return null; // kein Eintrag gefunden
+      return null; // no entry found
     }
 
-    // Sortiere die passenden Einträge nach Index (absteigend) und gib den neuesten zurück
+    // Sort matching entries by index (descending) and return newest
     return matchingEntries.sort((a, b) => b.index - a.index)[0];
   }
 }
 
-// diese Klasse vergibt für einen Node eine Eindeutige Adresse auf Basis seines Pfades bzw. seiner Position im XML
+// this class assigns a unique address for a node based on its path or position in the XML
 class AnchorIdBuilder {
   /**
    */
   constructor() {
-    // Liste der strukturellen Element-Typen, die für die Hierarchie relevant sind
+    // List of structural element types relevant for the hierarchy
     this.structuralTypes = [
       "front",
       "back",
@@ -224,28 +224,28 @@ class AnchorIdBuilder {
       "sec",
       "sec_type_paragraph",
     ];
-    // Zähler für spezifische Knotentypen pro Hierarchieebene
+    // Counters for specific node types per hierarchy level
     this.counterStructure = new CounterStructure();
   }
 
   /**
-   * Aktualisiert die Hierarchieebenen basierend auf einem neuen XML-Pfad
-   * @param {string} path - Der XML-Pfad
-   * @returns {Object} - Die aktualisierte Hierarchiestruktur
+   * Updates hierarchy levels based on a new XML path
+   * @param {string} path - The XML path
+   * @returns {Object} - The updated hierarchy structure
    */
   updateStructure(path, nodeType) {
-    // Extrahiere die strukturellen Elemente aus dem Pfad
+    // Extract structural elements from path
     const structuralElements = this.extractStructuralElements(path);
     const isStructuralEndingPath = this.isStructuralEndingPath(path);
     const isCounterElementPath = this.isCounterElement(
       structuralElements.endingPart
     );
     if (!isCounterElementPath && !isStructuralEndingPath) {
-      // Wenn der Pfad kein strukturelles Element enthält, ignoriere den Pfad
+      // If path contains no structural element, ignore path
       return;
     }
     if (isCounterElementPath) {
-      // Wenn der Pfad ein counter Element entält, erhöhe den entsprechenden Zähler
+      // If path contains a counter element, increment corresponding counter
       return this.counterStructure.incrementCounter(
         structuralElements.structuralPath,
         nodeType
@@ -253,7 +253,7 @@ class AnchorIdBuilder {
     }
 
     if (isStructuralEndingPath) {
-      // Wenn der Pfad mit einem strukturellen Element endet, erhöhe den Zähler für die aktuelle Ebene
+      // If path ends with structural element, increment counter for current level
       return this.counterStructure.incrementLevel(
         structuralElements.structuralPath,
         path,
@@ -265,9 +265,9 @@ class AnchorIdBuilder {
   }
 
   /**
-   * Prüft, ob ein Pfad mit einem strukturellen Element endet
-   * @param {string} path - Der zu prüfende Pfad
-   * @returns {boolean} - True, wenn der Pfad mit einem strukturellen Element endet
+   * Checks if path ends with structural element
+   * @param {string} path - The path to check
+   * @returns {boolean} - True if path ends with structural element
    */
   isStructuralEndingPath(path) {
     const lastElement = path.split("/").pop();
@@ -281,9 +281,9 @@ class AnchorIdBuilder {
   }
 
   /**
-   * Extrahiert die strukturellen Elemente aus einem Pfad
-   * @param {string} path - Der XML-Pfad
-   * @returns {Array} - Array mit Informationen über die strukturellen Elemente
+   * Extracts structural elements from path
+   * @param {string} path - The XML path
+   * @returns {Array} - Array with information about structural elements
    */
   extractStructuralElements(path) {
     const parts = path.split("/").filter((part) => part.length > 0);
@@ -308,21 +308,21 @@ class AnchorIdBuilder {
   formatNodeCounters() {
     let result = "";
 
-    // Iteriere über alle nodeCounter-Typen
+    // Iterate over all nodeCounter types
     for (const nodeType in this.nodeCounters) {
       if (this.nodeCounters.hasOwnProperty(nodeType)) {
         result += `\t${nodeType},`;
 
-        // Prüfe, ob es Einträge für diesen nodeType gibt
+        // Check if there are entries for this nodeType
         const entries = Object.entries(this.nodeCounters[nodeType]);
 
         if (entries.length === 0) {
           result += "-";
         } else {
-          // Sortiere die Einträge nach Hierarchie (falls gewünscht)
+          // Sort entries by hierarchy (if desired)
           entries.sort();
 
-          // Füge jeden Eintrag zum Ergebnisstring hinzu
+          // Add each entry to result string
           for (const [addr, count] of entries) {
             result += `  ${addr}: ${count}\n`;
           }
@@ -334,20 +334,20 @@ class AnchorIdBuilder {
   }
 
   /**
-   * Generiert einen Namen für einen bestimmten Knotentyp innerhalb einer Hierarchieebene
-   * @param {string} nodeType - Der Typ des Knotens (table-wrap, fig, non-normative-note, normative-note, sec, sub-part, sec_type_paragraph)
-   * @returns {string|null} - Der generierte Name oder null, wenn der Knotentyp nicht unterstützt wird
+   * Generates a name for a specific node type within a hierarchy level
+   * @param {string} nodeType - Node type (table-wrap, fig, non-normative-note, normative-note, sec, sub-part, sec_type_paragraph)
+   * @returns {string|null} - Generated name or null if node type is not supported
    */
   generateNodeName(nodeType) {
-    return null; // nicht relevanter Knotentyp
+    return null; // irrelevant node type
   }
 
   /**
-   * Erstellt eine formatierte Hierarchiezeichenfolge (z.B. "5-2-3")
-   * @returns {string|null} - Die formatierte Hierarchiezeichenfolge oder null, wenn keine gültige Struktur vorhanden ist
+   * Creates a formatted hierarchy string (e.g. "5-2-3")
+   * @returns {string|null} - Formatted hierarchy string or null if no valid structure exists
    */
   getFormattedNodeAddr() {
-    // Überprüfen, ob mindestens level1 gesetzt ist
+    // Check if at least level1 is set
     /*
     if (this.level1 === null) {
       return null;
@@ -355,7 +355,7 @@ class AnchorIdBuilder {
 
     let hierarchyParts = [this.level1];
 
-    // Alle gesetzten Level hinzufügen
+    // Add all set levels
     for (let i = 2; i <= 9; i++) {
       if (this[`level${i}`] !== null) {
         hierarchyParts.push(this[`level${i}`]);
@@ -364,7 +364,7 @@ class AnchorIdBuilder {
       }
     }
 
-    // formatiere die Hierarchiestruktur als String
+    // format hierarchy structure as string
     return hierarchyParts.join("-");
     */
     return "";

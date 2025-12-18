@@ -1,24 +1,24 @@
 "use strict";
 
 /**
- * BitmarkLegendCreator - Eine Klasse zum Erstellen von Legenden in Bitmark-Dokumenten
- * Diese Klasse hilft beim Zusammenstellen von Legenden mit Titel, Beschreibungstext und definierter Begriffspaare
- * und formatiert diese entsprechend der Bitmark-Syntax
+ * BitmarkLegendCreator - A class for creating legends in Bitmark documents
+ * This class helps to compile legends with title, body text and defined term pairs
+ * and formats them according to Bitmark syntax
  */
 class BitmarkLegendBuilder {
   /**
-   * Erstellt eine neue Instanz des BitmarkLegendCreator
+   * Creates a new instance of BitmarkLegendCreator
    */
   constructor() {
     this.title = "";
     //this.bodyText = "";
-    this.defItems = []; // Array für Begriffs-Definitions-Paare
+    this.defItems = []; // Array for term-definition pairs
   }
 
   /**
-   * Setzt den Titel der Legende
-   * @param {string} title - Der Titel der Legende
-   * @return {BitmarkLegendBuilder} - Für Method Chaining
+   * Sets the legend title
+   * @param {string} title - The title of the legend
+   * @return {BitmarkLegendBuilder} - For method chaining
    */
   setTitle(title) {
     this.title = title;
@@ -26,9 +26,9 @@ class BitmarkLegendBuilder {
   }
 
   /**
-   * Fügt einen Fließtext zur Legende hinzu
-   * @param {string} text - Der Fließtext, der hinzugefügt werden soll
-   * @return {BitmarkLegendBuilder} - Für Method Chaining
+   * Adds body text to the legend
+   * @param {string} text - The body text to be added
+   * @return {BitmarkLegendBuilder} - For method chaining
    */
   /*
   addBodyTxt(text) {
@@ -38,11 +38,11 @@ class BitmarkLegendBuilder {
     */
 
   /**
-   * Fügt ein Begriffs-Definitions-Paar zur Legende hinzu
-   * @param {string} term - Der Begriff (z.B. "①", "*a", etc.)
-   * @param {string} definition - Die Definition des Begriffs
-   * @param {string} [iconUrl=null] - Optional eine URL zum Icon-Bild
-   * @return {BitmarkLegendBuilder} - Für Method Chaining
+   * Adds a term-definition pair to the legend
+   * @param {string} term - The term (e.g. "①", "*a", etc.)
+   * @param {string} definition - The definition of the term
+   * @param {string} [iconUrl=null] - Optional URL to the icon image
+   * @return {BitmarkLegendBuilder} - For method chaining
    */
   addDefItem(term, definition) {
     this.defItems.push({
@@ -53,24 +53,24 @@ class BitmarkLegendBuilder {
   }
 
   /**
-   * Erstellt die vollständige Bitmark-Legende
-   * @return {string} - Der formatierte Bitmark-Text für die Legende
+   * Builds the complete Bitmark legend
+   * @return {string} - The formatted Bitmark text for the legend
    */
   buildBit() {
     let legendText = "";
 
-    // Titel hinzufügen, falls vorhanden
+    // Add title if present
     if (this.title && this.title.length > 0) {
       legendText += `\n====\n[#${this.title.trim()}]\n--\n[#]\n`;
     }
 
-    // Body-Text hinzufügen, falls vorhandens
+    // Add body text if present
     /*
     if (this.bodyText && this.bodyText.length > 0) {
       legendText += `\n${this.bodyText}`;
     }
     */
-    // Definitions-Items hinzufügen
+    // Add definition items
     for (const item of this.defItems) {
       legendText += "\n====";
       legendText += `\n${item.term}`;
@@ -78,7 +78,7 @@ class BitmarkLegendBuilder {
       legendText += `\n${item.definition}`;
     }
 
-    return legendText.replace(/\t•/g, "•"); // Entfernen aller Tabulatoren vor Listenpunkten
+    return legendText.replace(/\t•/g, "•"); // Remove all tabs before list items
   }
 }
 

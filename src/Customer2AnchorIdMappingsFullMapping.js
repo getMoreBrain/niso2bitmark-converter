@@ -5,7 +5,7 @@ const path = require('path');
 
 // Configuration
 const BASE_DIR = path.resolve(__dirname, '..', 'initialload/current');
-// Use the base directory itself for output, as requested: "Resultat: customer2AnchorIdMappings.json im Verzeichnis /initialload"
+// Use the base directory itself for output, as requested: "Result: customer2AnchorIdMappings.json in directory /initialload"
 const PUBLISH_PATH = BASE_DIR;
 const METADATA_PATH = path.resolve(__dirname, '..', 'config', 'book_registry.json');
 const TEMP_JSON_DIR = path.resolve(__dirname, '..', 'tmp', 'initialload');

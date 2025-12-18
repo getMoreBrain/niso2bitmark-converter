@@ -7,30 +7,30 @@ const NINParser = require("./NINParser");
 /**
  * CustomerID2AnchorFullMapper
  *
- * Diese Klasse durchsucht rekursiv ein Basisverzeichnis nach Dateien mit dem Namen "content.xml",
- * überprüft, ob im selben Verzeichnis eine "book_registry.json" existiert, und verarbeitet die
- * gefundenen XML-Dateien mit dem NINParser.
+ * This class recursively searches a base directory for files named "content.xml",
+ * checks if a "book_registry.json" exists in the same directory, and processes the
+ * found XML files with the NINParser.
  */
 class CustomerID2AnchorFullMapper {
   /**
-   * Konstruktor für CustomerID2AnchorFullMapper
-   * Initialisiert die Mapper-Instanz
+   * Constructor for CustomerID2AnchorFullMapper
+   * Initializes the mapper instance
    */
   constructor() {
     this.metadataList = null;
   }
 
   /**
-   * Liest die book_registry.json Datei und gibt die enthaltenen Metadaten zurück
-   * @param {string} dirPath - Verzeichnispfad, in dem book_registry.json liegt
-   * @returns {Object} - Objekt mit den Metadaten (parse_type, lang, gmbdocid)
+   * Reads the book_registry.json file and returns the contained metadata
+   * @param {string} dirPath - Directory path where book_registry.json is located
+   * @returns {Object} - Object with the metadata (parse_type, lang, gmbdocid)
    */
   readMetadata(nisoFilePath, metadataPath) {
     try {
       if (fs.existsSync(metadataPath)) {
         let raw = fs.readFileSync(metadataPath, "utf8");
 
-        // BOM-Zeichen behandeln, falls vorhanden
+        // Handle BOM characters if present
         if (raw.charCodeAt(0) === 0xfeff) {
           raw = raw.slice(1);
         }
@@ -43,7 +43,7 @@ class CustomerID2AnchorFullMapper {
         const normId = this.getNormId(nisoFilePath);
         const metadata = this.metadataList[normId];
 
-        // Objekt mit allen erforderlichen Eigenschaften zurückgeben
+        // Return object with all required properties
         return {
           parse_type: metadata.parse_type || "nin",
           lang: metadata.lang || "de",
@@ -52,12 +52,12 @@ class CustomerID2AnchorFullMapper {
       }
     } catch (error) {
       console.error(
-        `#### Fehler beim Lesen der book_registry.json in ${dirPath}:`,
+        `#### Error reading book_registry.json in ${dirPath}:`,
         error
       );
     }
 
-    // Standardwerte zurückgeben, wenn Datei nicht existiert oder ein Fehler auftritt
+    // Return default values if file does not exist or an error occurs
     return {
       parse_type: "nin",
       lang: "de",
@@ -67,46 +67,46 @@ class CustomerID2AnchorFullMapper {
 
 
   /**
-   * Durchsucht rekursiv ein Verzeichnis nach content.xml-Dateien mit book_registry.json im selben Verzeichnis
-   * @param {string} dir - Das zu durchsuchende Verzeichnis
-   * @returns {string[]} - Liste der gefundenen content.xml-Pfade
+   * Recursively searches a directory for content.xml files with book_registry.json in the same directory
+   * @param {string} dir - The directory to search
+   * @returns {string[]} - List of found content.xml paths
    */
   findContentXmlFiles(dir) {
     const results = [];
 
     try {
-      // Verzeichnisinhalt synchron lesen
+      // Read directory content synchronously
       const entries = fs.readdirSync(dir);
 
-      // Prüfen, ob content.xml UND book_registry.json im aktuellen Verzeichnis vorhanden sind
+      // Check if content.xml AND book_registry.json exist in the current directory
       const hasContentXml = entries.includes("content.xml");
       //const hasMetadataJson = entries.includes("book_registry.json");
 
       //if (hasContentXml && hasMetadataJson) {
       if (hasContentXml) {
-        // Beide Dateien gefunden, füge den content.xml-Pfad zu den Ergebnissen hinzu
+        // Both files found, add content.xml path to results
         results.push(path.join(dir, "content.xml"));
       }
 
-      // Rekursiv in Unterverzeichnissen suchen - vollständig synchron durchführen
+      // Recursively search subdirectories - perform completely synchronously
       for (const entry of entries) {
         const entryPath = path.join(dir, entry);
         try {
           const entryStat = fs.statSync(entryPath);
           if (entryStat.isDirectory()) {
-            // Synchron verarbeiten mit rekursivem Aufruf
+            // Process synchronously with recursive call
             const subResults = this.findContentXmlFiles(entryPath);
             results.push(...subResults);
           }
         } catch (error) {
-          console.error(`#### Fehler beim Prüfen von ${entryPath}:`, error);
+          console.error(`#### Error checking ${entryPath}:`, error);
         }
       }
 
       return results;
     } catch (error) {
       console.error(
-        `#### Fehler beim Durchsuchen des Verzeichnisses ${dir}:`,
+        `#### Error searching directory ${dir}:`,
         error
       );
       return results;
@@ -114,10 +114,10 @@ class CustomerID2AnchorFullMapper {
   }
 
   /**
-   * Sucht rekursiv nach metadata.xml im Verzeichnis nisoFilePath und extrahiert den Wert von <name>.
-   * Das File muss im GLEICHEN Verzeichnis liegen wie content.xml.
-   * @param {string} nisoFilePath - Pfad zur content.xml (oder Verzeichnis)
-   * @returns {string|null} - Der gefundene Name oder null
+   * Recursively looks for metadata.xml in the directory nisoFilePath and extracts the value of <name>.
+   * The file must be in the SAME directory as content.xml.
+   * @param {string} nisoFilePath - Path to content.xml (or directory)
+   * @returns {string|null} - The found name or null
    */
   getNormId(nisoFilePath) {
     try {
@@ -154,46 +154,46 @@ class CustomerID2AnchorFullMapper {
 
       if (metadataPath) {
         const content = fs.readFileSync(metadataPath, "utf8");
-        // Einfacher Regex für <name>...</name>
+        // Simple Regex for <name>...</name>
         const match = content.match(/<name>(.*?)<\/name>/);
         if (match && match[1]) {
           return match[1].trim();
         }
       }
     } catch (e) {
-      console.error("Fehler in getNormId:", e);
+      console.error("Error in getNormId:", e);
     }
     return null;
   }
 
   /**
-   * Verarbeitet eine content.xml-Datei mit dem NINParser
-   * @param {string} nisoFilePath - Pfad zur content.xml-Datei
-   * @param {string} publishpath - Der Veröffentlichungspfad für die Mapper-Datei
-   * @param {string} metadataPath - Pfad zur Registry
-   * @param {string} tempJsonDir - Temporäres Verzeichnis für ot.json
+   * Processes a content.xml file with the NINParser
+   * @param {string} nisoFilePath - Path to content.xml file
+   * @param {string} publishpath - The publish path for the mapper file
+   * @param {string} metadataPath - Path to registry
+   * @param {string} tempJsonDir - Temporary directory for ot.json
    * @returns {Promise<void>}
    */
   async processXmlFile(nisoFilePath, publishpath, metadataPath, tempJsonDir) {
     try {
-      console.log(`Starte NINParser-Verarbeitung für: ${nisoFilePath}`);
+      console.log(`Starting NINParser processing for: ${nisoFilePath}`);
 
       let dirPath = path.dirname(nisoFilePath);
       dirPath = path.dirname(dirPath);
 
-      // Metadaten aus book_registry.json lesen (synchron)
+      // Read metadata from book_registry.json (synchronously)
       const metadata = this.readMetadata(dirPath, metadataPath);
       console.log(
-        `Metadaten gelesen: parse_type=${metadata.parse_type}, lang=${metadata.lang}`
+        `Metadata read: parse_type=${metadata.parse_type}, lang=${metadata.lang}`
       );
 
       const jsonProgressCallback = (messageKey, percent, params) => {
         // nada
       };
-      // Parse die XML-Datei mit dem NINParser-Modul
-      // Übergebe die Parameter convert_type und lang aus den Metadaten
-      // NINParser.parse() ist asynchron, daher warten wir explizit mit await
-      console.log(`#### Rufe NINParser.parse() für ${nisoFilePath} auf...`);
+      // Parse the XML file with the NINParser module
+      // Pass the convert_type and lang parameters from metadata
+      // NINParser.parse() is asynchronous, so we wait explicitly with await
+      console.log(`#### Calling NINParser.parse() for ${nisoFilePath}...`);
       await NINParser.parse(
         nisoFilePath,
         metadata.parse_type,
@@ -204,29 +204,29 @@ class CustomerID2AnchorFullMapper {
         null
       );
 
-      console.log(`#### NINParser.parse() für ${nisoFilePath} abgeschlossen.`);
+      console.log(`#### NINParser.parse() for ${nisoFilePath} completed.`);
     } catch (error) {
       console.error(
-        `#### Fehler bei der Verarbeitung von ${nisoFilePath}:`,
+        `#### Error processing ${nisoFilePath}:`,
         error
       );
     }
   }
 
   /**
-   * Hauptmethode, die alle content.xml-Dateien im angegebenen Basisverzeichnis verarbeitet
-   * @param {string} baseDir - Das Basisverzeichnis für die Suche
-   * @param {string} publishpath - Der Veröffentlichungspfad für die Mapper-Datei
-   * @param {string} metadataPath - Pfad zur Registry
-   * @param {string} tempJsonDir - Temporäres Verzeichnis für ot.json
+   * Main method that processes all content.xml files in the specified base directory
+   * @param {string} baseDir - The base directory for the search
+   * @param {string} publishpath - Publish path for the mapper file
+   * @param {string} metadataPath - Path to registry
+   * @param {string} tempJsonDir - Temporary directory for ot.json
    * @returns {Promise<void>}
    */
   async mapFull(baseDir, publishpath, metadataPath, tempJsonDir) {
     try {
-      console.log(`Starte Verarbeitung im Basisverzeichnis: ${baseDir}`);
+      console.log(`Starting processing in base directory: ${baseDir}`);
 
 
-      // Initialisierung: Lösche existierendes Mapping-File und potentielle Locks
+      // Initialization: Delete existing mapping file and potential locks
       const mappingFileStr = "customer2AnchorIdMappings.json";
       const lockFileStr = "customer2AnchorIdMappings.lock";
       const mappingFilePath = path.join(publishpath, mappingFileStr);
@@ -241,38 +241,38 @@ class CustomerID2AnchorFullMapper {
         console.log(`Existing lock removed: ${lockFilePath}`);
       }
 
-      // Suche nach allen passenden content.xml-Dateien (synchron)
+      // Search for all matching content.xml files (synchronous)
       const contentXmlFiles = this.findContentXmlFiles(baseDir);
 
       console.log(
-        `${contentXmlFiles.length} content.xml-Dateien mit zugehöriger book_registry.json gefunden.`
+        `${contentXmlFiles.length} content.xml files with associated book_registry.json found.`
       );
 
-      // Jede gefundene Datei strikt sequenziell verarbeiten
-      // NINParser.parse() ist asynchron, daher muss jeder Aufruf mit await abgewartet werden,
-      // um sicherzustellen, dass die Dateien nacheinander verarbeitet werden
-      console.log("Starte sequenzielle Verarbeitung der Dateien...");
+      // Process each found file strictly sequentially
+      // NINParser.parse() is asynchronous, therefore each call must be awaited,
+      // to ensure that the files are processed one after the other
+      console.log("Starting sequential processing of files...");
 
       for (let i = 0; i < contentXmlFiles.length; i++) {
         const xmlFile = contentXmlFiles[i];
         console.log(
-          `#### Verarbeite Datei ${i + 1} von ${contentXmlFiles.length
+          `#### Processing file ${i + 1} of ${contentXmlFiles.length
           }: ${xmlFile}`
         );
 
-        // Warte explizit auf den Abschluss der Verarbeitung für diese Datei,
-        // bevor mit der nächsten fortgefahren wird
+        // Wait explicitly for the completion of processing for this file,
+        // before continuing with the next one
         await this.processXmlFile(xmlFile, publishpath, metadataPath, tempJsonDir);
 
         console.log(
-          `#### Datei ${i + 1} von ${contentXmlFiles.length} abgeschlossen.`
+          `#### File ${i + 1} of ${contentXmlFiles.length} completed.`
         );
       }
 
-      console.log("Sequenzielle Verarbeitung aller Dateien abgeschlossen.");
+      console.log("Sequential processing of all files completed.");
 
     } catch (error) {
-      console.error("#### Ein Fehler ist aufgetreten:", error);
+      console.error("#### An error occurred:", error);
       throw error;
     }
   }

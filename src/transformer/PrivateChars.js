@@ -66,7 +66,7 @@ const private_char_map = {
   U_e040: " ",
   U_e041: " ",
   U_e042: " ",
-  pen_leiter: " ", //kommt 2x vor welcher ist richtig?
+  pen_leiter: " ", //occurs 2x which one is correct?
   U_e044: " ",
   U_e045: " ",
   U_e046: " ",
@@ -135,7 +135,7 @@ const private_char_map = {
   transformator: " ",
   trafo: " ",
   trenntrafo: " ",
-  kurzschlussfest: " ", //?? löschen?
+  kurzschlussfest: " ", //?? delete?
   trafo_kurzschlussfest: " ", // same as above
   steuertransformator: " ",
   sicherheitstrafo: " ",
@@ -174,7 +174,7 @@ const private_char_map = {
   psa_3: " ",
   gleichstromsensitiv: " ",
   begrenzte_oberflaechentemp: " ",
-  egrenzte_oberflaechentemp: " ", // same as above, falsch geschrieben in Quelle
+  egrenzte_oberflaechentemp: " ", // same as above, misspelled in source
   U_e0ad: " ",
   U_e0ae: " ",
   zulaessig: " ",
@@ -183,7 +183,7 @@ const private_char_map = {
   neutralleiter_n: " ",
   schutzleiter_pe: " ",
   systemreferenzleiter: " ",
-  // pen_leiter: " ", doppelte bezeichnung, sonderfall
+  // pen_leiter: " ", double designation, special case
   nr_1: " ",
   nr_2: " ",
   nr_3: " ",
@@ -206,7 +206,7 @@ Neutralleiter_N U+e0b2
 PEN_Leiter U+e0b6
 Schutzleiter_PE U+e0b3
 Systemreferenzleiter U+e0b4
-egrenzte_oberflaechentemp --> schon vorhanden U_e0ac egrenzte-oberflaechentemp -->  <private-char description="egrenzte-oberflaechentemp">
+egrenzte_oberflaechentemp --> already exists U_e0ac egrenzte-oberflaechentemp -->  <private-char description="egrenzte-oberflaechentemp">
 Nr_1 U+e0b7
 Nr_2 U+e0b8
 Nr_3 U+e0b9

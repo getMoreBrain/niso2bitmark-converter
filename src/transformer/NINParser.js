@@ -6,7 +6,7 @@ const fs = require("fs");
 const { parse } = require("path");
 const path = require("path");
 const uuidv4 = require("uuid").v4;
-// Importieren der ChapterStructure-Klasse
+// Importing the ChapterStructure class
 const AnchorIdBuilder = require("./AnchorIdBuilder");
 //const MappingStore = require("./MappingStore");
 const MappingStoreFast = require("./MappingStoreFast");
@@ -21,12 +21,12 @@ class NINNode {
     this.parentAnchorId = null;
     this.customerId = null;
     this.seclevel = -1;
-    this.xmllevel = -1; // XML-Ebenen-Nummer
-    this.parentId = null; // ID des übergeordneten Elements mit einer ID
+    this.xmllevel = -1; // XML level number
+    this.parentId = null; // ID of the parent element with an ID
     this.subpartId = null;
     this.docpart = null;
     this.parentNodeName = null;
-    this.path = ""; // XML-Pfad des Nodes
+    this.path = ""; // XML path of the node
     this.plaintext = "";
     this.attributes = {};
     this.children = [];
@@ -89,7 +89,7 @@ const NINParser = (() => {
   let customer2AchorIdMappingStoreObj = null;
   let logger = null;
   const stack = [];
-  const pathStack = []; // Neuer Stack für den Pfad
+  const pathStack = []; // New stack for the path
   const initStandard = () => {
     currentNode = null;
     currentDocPart = null;
@@ -99,7 +99,7 @@ const NINParser = (() => {
     xmllevel = 0;
     subPartLevel = 0;
     docRefUpdateCount = 0; // NEW: Reset counter
-    pathStack.length = 0; // Pfad-Stack zurücksetzen
+    pathStack.length = 0; // Reset path stack
   };
   return {
     parse: async function (
@@ -200,8 +200,8 @@ const NINParser = (() => {
               // create some special node names for specific node types
 
               // <sec sec-type="paragraph">
-              // "sec" mit sec-type = paragraph muss wie ein "article" behandelt werden
-              // node.name anpassen auf "sec_type_paragraph"
+              // "sec" with sec-type = paragraph must be treated like an "article"
+              // adapt node.name to "sec_type_paragraph"
               //
               var nodeName = isSecTypParagraph(node)
                 ? "sec_type_paragraph"
@@ -215,14 +215,14 @@ const NINParser = (() => {
                 : nodeName; // <std-xref type="supersedes">
 
               var newNode = new NINNode(nodeName);
-              newNode.setAttributes(node.attributes); // setzt auch id-Attribut falls vorhanden
+              newNode.setAttributes(node.attributes); // also sets id attribute if available
               newNode.setDocPart(currentDocPart);
-              newNode.customerId = node.attributes.id ? node.attributes.id : null; // UUID aus dem XML-Tag
+              newNode.customerId = node.attributes.id ? node.attributes.id : null; // UUID from the XML tag
               newNode.xmllevel = xmllevel;
 
-              // Pfad-Aktualisierung: Füge aktuellen Knotennamen zum Pfad-Stack hinzu
+              // Path update: Add current node name to path stack
               pathStack.push(nodeName);
-              // Erstellen des vollständigen Pfades aus dem Stack (mit "/" am Anfang und zwischen den Elementen)
+              // Create the complete path from the stack (with "/" at the beginning and between elements)
               const currentPath = "/" + pathStack.join("/");
 
               newNode.anchorId = anchorBuilderObj.updateStructure(
@@ -232,12 +232,12 @@ const NINParser = (() => {
               newNode.setPath(currentPath);
 
               if (
-                isFirstLevelSubPart(node.name, subPartLevel) || //<body> unterteilen in <sub-part> sonst wird output-String currentSubPartJsonszu lang
-                isFirstLevelFrontOrBack(node.name, xmllevel) || // <front> oder <back>
+                isFirstLevelSubPart(node.name, subPartLevel) || // split <body> into <sub-part> otherwise output string currentSubPartJsons becomes too long
+                isFirstLevelFrontOrBack(node.name, xmllevel) || // <front> or <back>
                 (doctype == "no_sub-part" &&
-                  istFirstLevelSec(node.name, xmllevel, currentDocPart)) // für Dokument ohne <sub-part> zur Unterteilung eines Dokuments
+                  istFirstLevelSec(node.name, xmllevel, currentDocPart)) // for document without <sub-part> to subdivide a document
               ) {
-                // Start neuer root-<sub-part>
+                // Start new root-<sub-part>
                 sectionLevel = 1;
                 newNode.setSectionLevel(sectionLevel);
                 currentSubPartJson = newNode;
@@ -275,7 +275,7 @@ const NINParser = (() => {
                 }
               }
 
-              // Vererben der ID von einem Parent-Node, falls vorhanden
+              // Inherit ID from a parent node, if available
               if (currentNode && currentNode.id) {
                 newNode.setParentId(currentNode.id);
                 newNode.parentAnchorId = currentNode.anchorId;
@@ -310,7 +310,7 @@ const NINParser = (() => {
               if (currentNode) {
                 newNode.parentNodeName = currentNode.name;
                 currentNode.addChild(newNode);
-                // falls der Knoten keine customerId hat, dann wird sie aus dem parentNode/currentNode generiert
+                // if the node has no customerId, it is generated from parentNode/currentNode
                 newNode.customerId = newNode.customerId
                   ? newNode.customerId
                   : currentNode.customerId
@@ -342,9 +342,9 @@ const NINParser = (() => {
 
               // write the JSON object to the output stream
               if (
-                isFirstLevelSubPart(tagName, subPartLevel) || //<body> unterteilen in <sub-part> sonst wird output-String zu lang
-                isFirstLevelFrontOrBack(tagName, xmllevel) || // <front> oder <back>
-                (doctype == "no_sub-part" && istFirstLevelSec(tagName, xmllevel)) // für Dokument ohne <sub-part> zur Unterteilung eines Dokuments
+                isFirstLevelSubPart(tagName, subPartLevel) || // split <body> into <sub-part> otherwise output string becomes too long
+                isFirstLevelFrontOrBack(tagName, xmllevel) || // <front> or <back>
+                (doctype == "no_sub-part" && istFirstLevelSec(tagName, xmllevel)) // for document without <sub-part> to subdivide a document
               ) {
                 outputStream.write(
                   (!isFirstelement ? ",\n" : "") +
@@ -353,7 +353,7 @@ const NINParser = (() => {
                 isFirstelement = false;
               }
 
-              // Entferne den letzten Eintrag aus dem Pfad-Stack
+              // Remove the last entry from the path stack
               pathStack.pop();
 
               currentNode = stack.shift();
@@ -366,7 +366,7 @@ const NINParser = (() => {
 
             parser.on("text", (text) => {
               if (currentNode) {
-                var txt = text.replace(/\r?\n|\r/g, " "); // remove line breakss
+                var txt = text.replace(/\r?\n|\r/g, " "); // remove line breaks
                 if (currentNode.name.indexOf("mml:") > -1) {
                   txt = escapeSpecialXmlChars(txt);
                 }
@@ -380,7 +380,7 @@ const NINParser = (() => {
                 newNode.setSectionLevel(sectionLevel);
                 newNode.parentId = currentNode.parentId;
                 currentNode.addChild(newNode);
-                // customerId generieren
+                // generate customerId
                 newNode.customerId = currentNode.customerId
                   ? currentNode.customerId +
                   (currentNode.getChildrenCount() === 1
@@ -402,7 +402,7 @@ const NINParser = (() => {
               outputStream.end();
             });
 
-            // Warten bis alles geschrieben wurde und Stream geschlossen ist
+            // Wait until everything is written and stream is closed
             outputStream.on("finish", () => {
               cleanupAndResolve();
             });
@@ -482,7 +482,7 @@ function isSubSubPart(tagName, subPartLevel, doctype) {
   return false;
 }
 
-// SNG49: nur back berücksichtigen, wenn xmllevel 2 (=top-level, also nicht <back> innerhalb von <sub-part>)
+// SNG49: only consider back if xmllevel 2 (=top-level, i.e. not <back> inside <sub-part>)
 function isFirstLevelBack(tagName) {
   return tagName === "back" && xmllevel == 2;
 }
@@ -547,9 +547,9 @@ function isStdXrefSupersedes(node) {
 function writePathData(nisoFileName, anchorId, xmlpath, csvOutputDir) {
   if (!csvOutputDir) return;
 
-  // Pfad in Segmente aufteilen
+  // Split path into segments
   const segments = csvOutputDir.split("/");
-  // Segment finden das mit "_XML" endet
+  // Find segment ending with "_XML"
   const lastSegment = segments[segments.length - 1];
 
   if (anchorId) {
@@ -572,21 +572,21 @@ function writePathData(nisoFileName, anchorId, xmlpath, csvOutputDir) {
 }
 
 /**
- * Eliminiert mehrfache Leerzeichen zwischen druckbaren Zeichen
- * Regel: Mehr als 3 aufeinanderfolgende Leerzeichen zwischen druckbaren Zeichen werden auf 1 Leerzeichen reduziert
- * Danach werden alle TAB-Zeichen entfernt
+ * Eliminates multiple spaces between printable characters
+ * Rule: More than 3 consecutive spaces between printable characters are reduced to 1 space
+ * Afterward, all TAB characters are removed
  *
- * @param {string} text - Der zu bereinigende Text
- * @returns {string} - Der bereinigte Text
+ * @param {string} text - The text to be cleaned
+ * @returns {string} - The cleaned text
  */
 function eliminateMultipleSpaces(text, node, logger) {
   if (!text) return text;
 
-  // Schritt 1: Alle TAB-Zeichen entfernen
+  // Step 1: Remove all TAB characters
   let result = text.replace(/\t/g, "");
 
-  // Schritt 2: Mehr als 4 Leerzeichen zwischen druckbaren Zeichen auf 1 Leerzeichen reduzieren
-  // Pattern: druckbares Zeichen, gefolgt von mehr als 4 Leerzeichen, gefolgt von druckbarem Zeichen
+  // Step 2: Reduce more than 4 spaces between printable characters to 1 space
+  // Pattern: printable char, followed by more than 4 spaces, followed by printable char
   result = result.replace(/(\S) {4,}(?=\S)/g, "$1 ");
   const diff = text.length - result.length;
   if (diff > 4) {

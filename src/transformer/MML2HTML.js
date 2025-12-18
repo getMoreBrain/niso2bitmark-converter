@@ -5,8 +5,8 @@ class MML2HTML {
   constructor() {
     // mjAPI.config({
     //   MathJax: {
-    //     displayAlign: "left", // Linksbündig!
-    //     displayIndent: "0em", // Keine Einrückung
+    //     displayAlign: "left", // Left aligned!
+    //     displayIndent: "0em", // No indentation
     //     jax: ["input/MathML", "output/HTML-CSS"],
     //     extensions: ["mml2jax.js"],
     //     "HTML-CSS": { fonts: ["TeX"] },

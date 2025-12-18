@@ -115,12 +115,12 @@ function getVisitorForNode(node, visitedNodes, transformer, parentNode = null) {
 }
 
 function findNodeById(node, searchId) {
-  // Direkte Übereinstimmung prüfen
+  // Check for direct match
   if (node.id === searchId) {
     return node;
   }
 
-  // Rekursiv durch alle Kinder suchen
+  // Search recursively through all children
   if (node.children) {
     for (const child of node.children) {
       const foundNode = findNodeById(child, searchId);
@@ -130,7 +130,7 @@ function findNodeById(node, searchId) {
     }
   }
 
-  return null; // Node nicht gefunden
+  return null; // Node not found
 }
 
 function findFirstChild(node, name) {
@@ -314,7 +314,7 @@ const internal_link = (node, visitor) => {
     id = visitor.transformer.getAnchorForCustId(rid) || ""; // get AnchorId for customerId
   }
   if (!id) {
-    CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkUnmatchedRid", " customerid: " + node.customerId + " rid: " + node.rid + " reftype: " + node.refType);
+    CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkUnmatchedRid", " customerid: " + node.customerId + " rid: " + rid + " reftype: " + reftype);
   }
   return formatInternalLink(txt, id);
 };
@@ -339,7 +339,7 @@ const extractCustomerIdFromXlinkHref = (xlinkHref) => {
   if (idMatch && idMatch[1]) {
     return idMatch[1].trim();
   }
-  return null; // Keine gültige ID gefunden
+  return null; // No valid ID found
 };
 
 // <ext-link ext-link-type="gmb-uri" specific-use="standard-link" xlink:href="http://ninonline.ch/411000_2025/sec_4.1.2_SN4110002025de" xmlns:xlink="
@@ -381,7 +381,7 @@ const external_link = (node, visitor) => {
       extractCustomerIdFromXlinkHref(href)
     );
     if (anchorId && anchorId.includes("ref_")) {
-      // speziell:  ref muss auf parent = ref_list verweisen, weil ref kein eigenes Elemnt/Bit ist
+      // special: ref must point to parent = ref_list, because ref is not its own Element/Bit
       anchorId = visitor.transformer.getParentAnchorForCustId(
         extractCustomerIdFromXlinkHref(href)
       );
@@ -401,7 +401,7 @@ const external_link = (node, visitor) => {
         extractCustomerIdFromXlinkHref(href)
       );
       if (anchorId && anchorId.includes("ref_")) {
-        // speziell:  ref muss auf parent = ref_list verweisen, weil ref kein eigenes Elemnt/Bit ist
+        // special: ref must point to parent = ref_list, because ref is not its own Element/Bit
         anchorId = visitor.transformer.getParentAnchorForCustId(
           extractCustomerIdFromXlinkHref(href)
         );
@@ -413,7 +413,7 @@ const external_link = (node, visitor) => {
     }
     gmbAnchor = visitor.transformer.getAnchorForCustId(href);
     if (gmbDocId === "notdefined") {
-      // noch kein Mapping für Dokument vorhanden weil nocht nicht zurverfügung gestellt
+      // no mapping available for document yet because not yet provided
       bitmark = ` ==${txt}==|xref:|►undef`;
       CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoMappig", "href: " + href);
     } else if (ix_trailer > -1) {
@@ -611,12 +611,12 @@ function processParagraphRecursion(
         }
       }
     } else if (child.name === "sub") {
-      // tiefstellen
+      // subscript
       paragraphTextByRef.text = paragraphTextByRef.text
         .trim()
         .concat("==" + child.plaintext + "==|subscript| ");
     } else if (child.name === "sup") {
-      // hochstellen
+      // superscript
       paragraphTextByRef.text = paragraphTextByRef.text
         .trim()
         .concat("==" + child.plaintext + "==|superscript| ");
@@ -767,7 +767,7 @@ function listItemRecursion(listNode, visitor, listTextByRef, level) {
             .concat(processParagraph(el, visitor, level + 1)); // check!!
           firstEl = false;
         } else if (el.name === "list") {
-          // recursive call, mehrfach verschachtelte Listen
+          // recursive call, multiple nested lists
           const nextLevel = level + 1;
           const txt = processList(el, visitor, nextLevel);
           if (txt != null) {
@@ -780,7 +780,7 @@ function listItemRecursion(listNode, visitor, listTextByRef, level) {
       }
       //end of listItem.children
       if (listType === "bullet") {
-        // @style-detail "dash" etc nicht berücksichtigt
+        // @style-detail "dash" etc not considered
         listTextByRef.text = listTextByRef.text.concat(
           bmTemplates.listItemBullet(level, content)
         );
@@ -917,7 +917,7 @@ function processTermSec(termSecNode, visitor) {
         (term.length > 0 ? ":\n" : "") +
         def;
     } else {
-      // bold nicht möglich **TEXT**|bold|
+      // bold not possible **TEXT**|bold|
       termDisplTxt = termDisplTxt + term + (term.length > 0 ? ":\n" : "") + def;
     }
 
@@ -1334,7 +1334,7 @@ function processIndexTerms(parentNode, node, visitor) {
   if (!node || !node.children) {
     return;
   }
-  // todo: rekursiv nach index-term suchen
+  // todo: search recursively for index-term
   for (const child of node.children) {
     if (child.name === "index-term") {
 
@@ -1411,8 +1411,8 @@ class SecVisitor extends IVisitor {
       this.markVisited(titleNode);
     }
 
-    // es kann sein, dass TitleNode auch Index-Terme enthält
-    // diese sollen auch im Parent-Node gespeichert werden
+    // It may be that TitleNode also contains index terms
+    // these should also be saved in the parent node
     processIndexTerms(node, labelNode, this);
 
     this.transformer.writeToFile(
@@ -1902,7 +1902,7 @@ class ListVisitor extends IVisitor {
   }
 }
 
-// SecTypeParagraph hat item & lead. wird beim ersten Paragraphen ausgegeben
+// SecTypeParagraph has item & lead. is output at the first paragraph
 class SecTypeParagraph extends IVisitor {
   visit(node, visitpath) {
     // Skip the node if it has already been visited
@@ -1928,7 +1928,7 @@ class SecTypeParagraph extends IVisitor {
       this.markVisited(titleNode);
     }
 
-    // es kann sein, dass TitleNode auch Index-Terme enthält
+    // It may be that TitleNode also contains index terms
     processIndexTerms(node, labelNode, this);
 
     // Handle children
@@ -2115,8 +2115,8 @@ class NotesGroupVisitor extends IVisitor {
 
     const id = node.attributes["id"];
     const labelNode = findFirstChild(node, "title");
-    // es kann sein, dass TitleNode auch Index-Terme enthält
-    // diese sollen auch im Parent-Node gespeichert werden
+    // It may be that TitleNode also contains index terms
+    // these should also be saved in the parent node
     processIndexTerms(node, labelNode, this);
     var label = labelNode ? labelNode.plaintext : "";
     this.markVisited(labelNode);
@@ -2164,8 +2164,8 @@ class BoxedTextVisitor extends IVisitor {
       label = node.label; // overload from parent
     }
     this.markVisited(labelNode);
-    // es kann sein, dass TitleNode auch Index-Terme enthält
-    // diese sollen auch im Parent-Node gespeichert werden
+    // It may be that TitleNode also contains index terms
+    // these should also be saved in the parent node
     processIndexTerms(node, labelNode, this);
 
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
@@ -2281,7 +2281,7 @@ class StdMetaVisitor extends IVisitor {
       if (stdRefNode) {
         let stdXreTxt = null;
         if (stdXrefSupersedesNode) {
-          // wenn std_xref_supersedes vorhanden ist, dann std-ref auslesen
+          // if std_xref_supersedes exists, then read std-ref
           this.markVisited(stdXrefSupersedesNode);
           const supersedesStdRefNode = findFirstChild(
             stdXrefSupersedesNode,
@@ -2345,7 +2345,7 @@ class ParagraphVisitor extends IVisitor {
     const currentPath = visitpath ? `${visitpath} > ${node.name}` : node.name;
 
     if (checkIfComplexStructure(node)) {
-      // contains notes-group, etc --> splitt <paragraph>
+      // contains notes-group, etc --> split <paragraph>
       do {
         const content = processParagraph(node, this, 1);
         if (content && content.length > 0) {
@@ -2484,8 +2484,8 @@ class TableWrapVisitor extends IVisitor {
       pseudoPNode.name = "p";
       captionTitle = processParagraph(pseudoPNode, this);
     }
-    // es kann sein, dass TitleNode auch Index-Terme enthält
-    // diese sollen auch im Parent-Node gespeichert werden
+    // It may be that TitleNode also contains index terms
+    // these should also be saved in the parent node
     processIndexTerms(node, captionTitleNode, this);
     this.markVisited(captionTitleNode);
     const tableNode = findFirstChild(node, "table");
@@ -2496,7 +2496,7 @@ class TableWrapVisitor extends IVisitor {
     if (captionNode && findFirstChild(captionNode, "p")) {
       // more complex caption ...
       // process captionNode if it contains additional <p>
-      // insert aditional bit with label and title bevore fig
+      // insert additional bit with label and title before fig
       captionNode.setBitmarkProperties(node);
       captionNode.label = labelNode ? label : "";
       captionNode.title = captionTitleNode ? captionTitle : "";
@@ -2523,7 +2523,7 @@ class TableWrapVisitor extends IVisitor {
       node,
       labelNode ? label : "",
       captionTitleNode ? captionTitle : "",
-      !node.isRemark ? htmlByRef.rawTxt : "", // todo: rawtext übergeben auch bei remark
+      !node.isRemark ? htmlByRef.rawTxt : "", // todo: pass rawtext also for remark
       CONFIG.ressourceBaseUrl + htmlFilePath + ".png",
       this
     );
@@ -2569,7 +2569,7 @@ function makeTableHTML(node, htmlByRef) {
     const href = CONFIG.localRessourcePath + node.attributes["xlink:href"];
     htmlByRef.html = htmlByRef.html.concat(`<img src="${href}"></img>`);
   } else if (node.name === "fn" && htmlByRef.tablePart === "tfoot") {
-    // insert td wirh colspan 100 for tfoot
+    // insert td with colspan 100 for tfoot
     htmlByRef.html = htmlByRef.html.concat("<td colspan='100'>");
   } else if (node.name === "fn" && htmlByRef.tablePart !== "tfoot") {
     // it is a footnote, do not process it here
@@ -2687,7 +2687,7 @@ function createHtmlNodeTags(node, htmlByRef) {
   var htmlNodeName = node.name;
   var style = "";
   if (node.name === "list") {
-    // loop through ListeItems
+    // loop through ListItems
     htmlByRef.list_type = node.attributes["list-type"];
     htmlByRef.list_style_detail = node.attributes["style-detail"]
       ? node.attributes["style-detail"]
@@ -2801,12 +2801,12 @@ class BitmarkTransformer {
       const workDir = path.dirname(outputPath);
 
       CONFIG.onProgress('convert_to_bitmark', 0, null);
-      this.customerId2AnchorMapper = new MappingStore(mapperPath); // CustomerId2AnchorMapper initialisieren  
-      // Mapper initialisieren
+      this.customerId2AnchorMapper = new MappingStore(mapperPath); // Initialize CustomerId2AnchorMapper  
+      // Initialize Mapper
       this.docIdMapper = new XpublisherDocId2GmbDocMapper(mapperPath, bookRegistryPath);
       this.docIdMapper.loadOverAllMappings();
 
-      // lade specific mapping für dieses Dokument
+      // load specific mapping for this document
       this.docIdMapper.loadXPSDocId2GmbIdMapping(CONFIG.localRessourcePath);
 
       // Remove the output file if it exists
@@ -2879,7 +2879,7 @@ class BitmarkTransformer {
             .processFileListSynchronously(onProgress)
             .then(() => {
 
-              // Schließe den Stream und resolve das Promise erst, wenn alles fertig ist
+              // Close the stream and resolve the promise only when everything is finished
               this.otStream.end(() => {
                 resolve();
               });
@@ -2925,5 +2925,5 @@ class BitmarkTransformer {
 
 // Export the BitmarkTransformer class as a module
 module.exports = BitmarkTransformer;
-// Exportiere zusätzliche Funktionen
+// Export additional functions
 module.exports.findNodeById = findNodeById;

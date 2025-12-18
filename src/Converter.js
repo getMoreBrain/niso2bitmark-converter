@@ -29,6 +29,7 @@ class Converter {
     async start(skipIfNoGmbId = false) {
         try {
             this.sendProgress(null, 0, false, null, 'transformation_started');
+            console.log(`Starting conversion for ${this.normID} in session ${this.sessionID}`);
 
             // Initialize Logger
             this.logger = new TransformerLogger();
@@ -44,8 +45,10 @@ class Converter {
             // We use the original directory for transformation
             const nisoFilePath = this.findNisoFilePath(this.xmlDir);
             if (!nisoFilePath) {
-                throw new Error("content.xml not found in directory");
+                console.warn(`content.xml not found in directory : ${this.xmlDir}`);
+                throw new Error("content.xml not found in directory : " + this.xmlDir);
             }
+            console.log(`Found NISO file: ${nisoFilePath}`);
 
             let metadata = null;
             // UPDATED: Use book_registry.json in ./config/
@@ -63,12 +66,14 @@ class Converter {
                         metadata = metaJson[key];
                     }
                 } catch (e) {
-                    console.warn("Error reading metadata, using defaults", e);
+                    console.warn("Error reading book_registry metadata, using defaults", e);
                 }
             }
             if (!metadata) {
-                throw new Error("Metadata not found for normID: " + this.normID);
+                throw new Error("book_registry: Metadata not found for normID: " + this.normID);
             }
+
+            console.log(`Metadata for ${this.normID}: ${JSON.stringify(metadata)}`);
 
             // Start 2.1 Update/Generate XpublisherDocId Mapping
             this.sendProgress(null, 5, false, null, 'scanning_and_updating_doc_ids');
@@ -96,12 +101,13 @@ class Converter {
                 throw new Error("Metadata lang not found for normID: " + this.normID + " --> check book_registry.json");
             }
 
-            // CustomerId2AnchorIdFullMapper initialisieren, Fullscan dauert lange
+            // Initialize CustomerId2AnchorIdFullMapper, FullScan takes a long time
             //const mapper = new CustomerId2AnchorIdFullMapper();
             //mapper.mapFull(publishpath, publishpath, metadataFile);
 
             // 3. Transform to JSON
             this.sendProgress(null, 8, false, null, 'transform_to_json');
+            console.log(`Transforming to JSON for ${this.normID} in session ${this.sessionID}`);
 
             const jsonProgressCallback = (messageKey, percent, params) => {
                 this.sendProgress(null, percent, false, null, messageKey, params);
@@ -124,6 +130,7 @@ class Converter {
             this.sendProgress(null, 100, false, null, 'transform_to_json');
             // Transform to Bitmark 
             this.sendProgress(null, 0, false, null, 'convert_to_bitmark');
+            console.log(`Transforming to Bitmark for ${this.normID} in session ${this.sessionID}`);
 
             // Rename Bitmark File if gmbdocid is present
             let bitmarkFilename = `${this.normID}.bitmark`;
@@ -135,7 +142,7 @@ class Converter {
             }
 
             // BitmarkTransformer expects outputPath to be a file path
-            const outputBitmarkPath = path.join(this.inputDir, bitmarkFilename); // "unter work/sessionid/<NormID>" -> inputDir is sessionID/<NormID>
+            const outputBitmarkPath = path.join(this.inputDir, bitmarkFilename); // "under work/sessionid/<NormID>" -> inputDir is sessionID/<NormID>
 
 
             const bitmarkProgressCallback = (messageKey, percent, params) => {
@@ -157,15 +164,16 @@ class Converter {
             // Save Consistency Report
             const reportPath = path.join(this.workDir, 'consistency_report.json');
             fs.writeJsonSync(reportPath, this.logger.logs, { spaces: 2 });
-            console.log(`Consistency report saved to ${reportPath}`);
+            //console.log(`Consistency report saved to ${reportPath}`);
 
             this.sendProgress(null, 100, true, null, 'transformation_finished');
+            console.log(`Conversion finished for ${this.normID} in session ${this.sessionID}`);
 
         } catch (error) {
             console.error("Conversion Error:", error);
             this.broadcast({
                 type: 'ERROR',
-                message: `Fehler: ${error.message}`,
+                message: `Error: ${error.message}`,
                 normID: this.normID
             });
         }

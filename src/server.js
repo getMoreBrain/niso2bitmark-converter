@@ -13,7 +13,7 @@ const app = express();
 const port = 3080;
 
 // Redirect console logs to file
-//fs.writeFileSync(path.join(__dirname, '..', 'server.log'), '');
+fs.writeFileSync(path.join(__dirname, '..', 'server.log'), '');
 const logStream = fs.createWriteStream(path.join(__dirname, '..', 'server.log'), { flags: 'a' });
 const originalLog = console.log;
 const originalError = console.error;
@@ -90,7 +90,6 @@ server.on('upgrade', (request, socket, head) => {
     }
 
     console.log(`[WS] Upgrade request: ${request.url} | Pathname: ${pathname} | Host: ${request.headers.host}`);
-    console.log(`[WS] Headers:`, JSON.stringify(request.headers, null, 2));
 
     // Normalize path (remove trailing slash)
     const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
@@ -154,7 +153,7 @@ const copyImagesToPublic = async (bookDir) => {
 
         const files = await fs.readdir(imagesDir);
         for (const file of files) {
-            // "Sämtliche Files ausser die .html files"
+            // "All files except the .html files"
             if (file.toLowerCase().endsWith('.html')) continue;
 
             const srcPath = path.join(imagesDir, file);
@@ -163,13 +162,13 @@ const copyImagesToPublic = async (bookDir) => {
             // Check if it is a file
             const stat = await fs.stat(srcPath);
             if (stat.isFile()) {
-                // "Files mit im Zielordner mit dem gleichen Namen sollen überschrieben werden"
+                // "Files with the same name in the destination folder should be overwritten"
                 await fs.copy(srcPath, destPath, { overwrite: true });
             }
         }
     } catch (error) {
         console.error("Error copying images to public:", error);
-        throw new Error("Fehler beim Kopieren der Bilder nach public/images: " + error.message);
+        throw new Error("Error copying images to public/images: " + error.message);
     }
 };
 
@@ -450,7 +449,7 @@ app.get('/api/preview/:sessionID/:normID', async (req, res) => {
             await fs.close(fd);
 
             let content = buffer.toString('utf8', 0, bytesRead);
-            content += `\n\n... [Vorschau gekürzt. Die Datei ist ${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB gross. Bitte downloaden Sie die Datei für den vollen Inhalt] ...`;
+            content += `\n\n... [Preview truncated. The file is ${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB large. Please download the file for full content] ...`;
             res.send(content);
         } else {
             res.sendFile(bitmarkPath);
@@ -518,7 +517,7 @@ app.post('/api/release', async (req, res) => {
             const items = await fs.readdir(directory);
             for (const item of items) {
                 if (item === keepId) continue; // Keep the current session if present
-                // Also skip hidden files or special dirs if necessary, but request said "sämtliche Directories"
+                // Also skip hidden files or special dirs if necessary, but request said "all directories"
                 if (item.startsWith('.')) continue;
 
                 const itemPath = path.join(directory, item);
@@ -734,6 +733,55 @@ app.get('/api/consistency-report/:sessionID', async (req, res) => {
         }
     } else {
         res.json([]);
+    }
+});
+
+app.get('/api/consistency-report/:sessionID/:normID/csv', async (req, res) => {
+    const { sessionID, normID } = req.params;
+    const sessionDir = path.join(WORK_DIR, sessionID);
+    const reportPath = path.join(sessionDir, 'consistency_report.json');
+
+    if (!fs.existsSync(reportPath)) {
+        return res.status(404).send('Report not found');
+    }
+
+    try {
+        const report = await fs.readJson(reportPath);
+
+        // Convert to CSV
+        const header = 'Severity,Category,Message,Reference\n';
+        const rows = report.map(log => {
+            let severity = 'Info';
+            if (log.severity === 3) severity = 'Error';
+            else if (log.severity === 2) severity = 'Warning';
+
+            let category = 'General';
+            if (log.category === 1) category = 'Link';
+            else if (log.category === 2) category = 'XML-Structure';
+            else if (log.category === 3) category = 'Content';
+
+            // Escape CSV fields
+            const escape = (txt) => {
+                if (!txt) return '';
+                txt = String(txt).replace(/"/g, '""');
+                return `"${txt}"`;
+            };
+
+            return `${escape(severity)},${escape(category)},${escape(log.errorMsg)},${escape(log.reference)}`;
+        });
+
+        const csvContent = header + rows.join('\n');
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${normID}_consistency_report_${timestamp}.csv`;
+
+        res.set('Content-Type', 'text/csv');
+        res.set('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csvContent);
+
+    } catch (e) {
+        console.error("CSV export error:", e);
+        res.status(500).send("Error generating CSV");
     }
 });
 

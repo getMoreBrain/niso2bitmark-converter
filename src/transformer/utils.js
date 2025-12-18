@@ -11,7 +11,7 @@ function publishImage(filePath, filename) {
         }
         const destPath = path.join(PUBLIC_IMAGES_DIR, filename);
         fs.copyFileSync(filePath, destPath);
-        console.log(`Published image to ${destPath}`);
+        //console.log(`Published image to ${destPath}`);
     } catch (err) {
         console.error(`Failed to publish image ${filename}:`, err);
     }

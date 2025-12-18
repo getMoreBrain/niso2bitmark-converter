@@ -12,11 +12,12 @@ The application offers the following core functionalities:
     -   Maps internal IDs and references.
     -   Copies associated assets (Images, PDFs).
 3.  **Live Progress**: Real-time progress updates via WebSockets during the transformation process.
-4.  **Release Management**:
+4.  **Consistency Check**: Automated verification of the generated content to identify potential issues before release.
+5.  **Release Management**:
     -   Deploy converted books to a "Current" version.
     -   Archive previous versions automatically.
     -   Rollback to previous versions.
-5.  **Downloads**: Download individual books or complete packages of the current or archived versions.
+6.  **Downloads**: Download individual books or complete packages of the current or archived versions.
 
 ## Process Steps
 
@@ -27,9 +28,17 @@ The application offers the following core functionalities:
     -   File is uploaded to `upload/`.
     -   Extracted to a temporary session directory in `work/<sessionID>/`.
     -   **Validation**:
-        -   Must contain exactly one folder ending in `_XML`.
-        -   Must contain `metadata.xml` and `content.xml`.
-        -   `metadata.xml` must contain a valid `<name>` (NormID) that exists in `config/book_registry.json`.
+    -   **Validation**: The ZIP file must adhere to the following deep directory structure (3 levels):
+        ```text
+        Zero.zip/
+        └── Level_1_Folder/
+            └── Level_2_Folder/ (SNG_491000_XML)
+            │    └── Level_3_Folder/ (0001-COO.6505.1000.15.4669235)
+            │    │   ├── metadata.xml <-- must contain a valid `<name>` (NormID) that exists in `config/book_registry.json`
+            │    │   └── content.xml  <-- must contain the XML-content of the book
+            │    └──metadata.xml (not relevant)
+            └── PDF-File (optional)
+        ```
     -   **Asset Handling**: If a PDF is found in the ZIP, it is moved to the book directory.
 
 ### 2. Transformation
@@ -42,7 +51,11 @@ The application offers the following core functionalities:
     4.  **Bitmark Generation** (`BitmarkTransformer.js`): Converts the intermediate JSON into strict Bitmark syntax.
     5.  **Output**: Generates `<NormID>.bitmark` in the session directory.
 
-### 3. Release
+### 3. Consistency Check
+-   **Endpoint**: `/api/consistency-report/:sessionID`
+-   **Description**: Checks the generated content for errors (e.g., broken links, missing assets). Must be error-free to proceed to release.
+
+### 4. Release
 -   **Endpoint**: `/api/release`
 -   **Process**:
     -   The current content of `versions/current` is moved to `versions/archive/version_<timestamp>`.
@@ -154,8 +167,7 @@ All modules located in `src/transformer/`:
 │   └── messages.json       # Localization strings (i18n)
 ├── public/                 # Frontend assets (HTML, CSS, JS)
 │   ├── index.html
-│   ├── style.css
-│   └── script.js
+│   └── style.css
 ├── src/                    # Source Code
 │   ├── server.js           # Main Server
 │   ├── Converter.js        # Transformation Manager
@@ -192,3 +204,273 @@ All modules located in `src/transformer/`:
 ├── package.json            # Dependencies
 └── README.md               # Documentation
 ```
+
+# Monitoring and Automatic Restart
+
+To ensure that the Niso2Bitmark application runs continuously and restarts automatically in the event of a crash, PM2 is used.
+
+## PM2 (Process Manager 2)
+What PM2 does:
+*   **Auto-Restart**: Restarts the app immediately upon crash.
+*   **Startup Script**: Automatically starts the app when the server boots.
+*   **Monitoring**: Shows real-time CPU and memory usage.
+*   **Log Management**: Bundles `stdout` and `stderr`.
+
+### Setup
+
+#### 1. Installation
+```bash
+sudo npm install -g pm2
+```
+
+#### 2. Start Application
+Start the application using PM2 instead of directly with `node`.
+```bash
+cd /home/ubuntu/dev/niso2bitmark-converter
+# --name gives the process a readable name
+pm2 start src/server.js --name "niso2bitmark"
+pm2 start src/log_pm2_status.js --name "niso2bitmark-pm2-monitor" --> writes status to server.log every 5 minutes + Log Rotation
+```
+
+#### 3. Auto-Restart on Crash
+This is active by default. If the app crashes (Exit Code != 0), PM2 restarts it.
+
+#### 4. Autostart on Server Boot
+To ensure the app restarts after a server reboot:
+```bash
+# This command generates a line that you must copy and execute (systemd setup)
+pm2 startup systemd
+--> output:sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu --hp /home/ubuntu
+
+# Save the current process list for the restart
+pm2 save
+
+# Remove init script via:
+$ pm2 unstartup systemd
+
+# Remove process from PM2
+$ pm2 delete niso2bitmark
+```
+
+#### 5. Monitoring
+*   **Check Status**: `pm2 list` (Shows uptime, restarts, memory).
+*   **Live Dashboard**: `pm2 monit` (Terminal GUI with logs and metrics).
+*   **View Logs**: `pm2 logs niso2bitmark`.
+
+```bash
+pm2 restart niso2bitmark
+pm2 restart niso2bitmark-pm2-monitor
+```
+
+
+### 6. Book Registry
+```json
+{
+  "411000_2025_de": {
+    "gmbdocid": "e-niederspannungs-installationsn_kwx7vzjevxay",
+    "lang": "de",
+    "parse_type": "nin"
+  },
+  "411000_2025_fr": {
+    "gmbdocid": "e-norme-sur-les-installations-ba_wipkajri2n97",
+    "lang": "fr",
+    "parse_type": "nin"
+  },
+  "411000_2025_it": {
+    "gmbdocid": "e-norma-per-le-installazioni-a-b_jexvif2cx1up",
+    "lang": "it",
+    "parse_type": "nin"
+  },
+  "414022_2024_de": {
+    "gmbdocid": "e-sn-414022-2024de_lo81mvz63ywt",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "414022_2024_fr": {
+    "gmbdocid": "e-sn-414022-2024fr_ftgt6zlyzvt_",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "414022_2024_it": {
+    "gmbdocid": "e-sn-414022-2024it_37t0yiydqwox",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "414113_2024_de": {
+    "gmbdocid": "e-sn-414113-2024de__d-v3bgumucz",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "414113_2024_fr": {
+    "gmbdocid": "e-sn-414113-2024_x6anjeug69li",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "414113_2024_it": {
+    "gmbdocid": "e-sn-414113-2024it_jqvuqkpub253",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "440100_2019_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "440100_2019_fr": {
+    "gmbdocid": "",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "440100_2019_it": {
+    "gmbdocid": "",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "441011_1_2019_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "441011_1_2019_en": {
+    "gmbdocid": "",
+    "lang": "en",
+    "parse_type": "no_sub-part"
+  },
+  "441011_2_1_2021_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "441011_2_1_2021_en": {
+    "gmbdocid": "",
+    "lang": "en",
+    "parse_type": "no_sub-part"
+  },
+  "441011_2_2_2019_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "441011_2_2_2019_en": {
+    "gmbdocid": "",
+    "lang": "en",
+    "parse_type": "no_sub-part"
+  },
+  "441011_2_3_2019_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "460712_2018_de": {
+    "gmbdocid": "e-snr-460712-2018de__f7ws9yy7drl",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "460712_2018_fr": {
+    "gmbdocid": "e-snr-460712-2018fr_jmlw3hxh0lxl",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "460712_2018_it": {
+    "gmbdocid": "e-snr-460712-2018it_viwjzonh7x7v",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "461439_2018_de": {
+    "gmbdocid": "e-snr-461439-2018de_kvmbg4tv2zbt",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "461439_2018_fr": {
+    "gmbdocid": "e-snr-461439-2018fr_yg0wqpvoldxx",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "461439_2018_it": {
+    "gmbdocid": "e-snr-461439-2018it_xq9zuyit7jo1",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "480761_2019_de": {
+    "gmbdocid": "e-sng-480761-2019de_8l1g0uwuacag",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "480761_2019_fr": {
+    "gmbdocid": "e-sng-480761-2019_q-eravuyvbio",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "480761_2019_it": {
+    "gmbdocid": "e-sng-480761-2019_x7drf1o-xekt",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "481449_2023_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "482638_2023_de": {
+    "gmbdocid": "e-sng-482638-2023de_wzibwkt7zgtp",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "482638_2023_fr": {
+    "gmbdocid": "e-sng-482638-2023fr_jy0fc99mydzh",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "482638_2023_it": {
+    "gmbdocid": "e-sng-482638-2023it_7il5qqvw6fkw",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "483127_2022_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "483127_2022_fr": {
+    "gmbdocid": "",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "483127_2022_it": {
+    "gmbdocid": "",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "483755_2023_de": {
+    "gmbdocid": "",
+    "lang": "de",
+    "parse_type": "no_sub-part"
+  },
+  "483755_2023_fr": {
+    "gmbdocid": "",
+    "lang": "fr",
+    "parse_type": "no_sub-part"
+  },
+  "483755_2023_it": {
+    "gmbdocid": "",
+    "lang": "it",
+    "parse_type": "no_sub-part"
+  },
+  "491000_0000_de": {
+    "gmbdocid": "e-electrosuisse-sng_491000_de",
+    "lang": "de",
+    "parse_type": "sng"
+  },
+  "491000_0000_fr": {
+    "gmbdocid": "e-electrosuisse-sng_491000_fr",
+    "lang": "fr",
+    "parse_type": "sng"
+  },
+  "491000_0000_it": {
+    "gmbdocid": "e-electrosuisse-sng_491000_it",
+    "lang": "it",
+    "parse_type": "sng"
+  }
+}
+```
+---

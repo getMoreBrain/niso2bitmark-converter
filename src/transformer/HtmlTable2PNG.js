@@ -1,10 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
-const Utils = require("./utils.js"); // Hilfsfunktionen für Upload (optional)
+const Utils = require("./utils.js"); // Helper functions for upload (optional)
 
 
-const uploadUrl = "https://carulab.io:63108/upload"; // URL für das Hochladen der Dateien
+const uploadUrl = "https://carulab.io:63108/upload"; // URL for uploading files
 
 const fontFaceCSS = `
 @font-face {
@@ -220,7 +220,7 @@ const cssStyles_NoBorder = {
   img_container_img: "vertical-align: middle;display: inline-block;",
 };
 
-// Funktion zur Erstellung des HTML-Inhalts mit den übergebenen CSS-Styles und Tabelleninhalt
+// Function to generate HTML content with passed CSS styles and table content
 const generateHTML = (tableContent, cssStyles) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -271,7 +271,7 @@ class HtmlTable2File {
   constructor() {
   }
 
-  // Erzeugt eine HTML-Datei und speichert sie in der Datei-Liste (upload_file_list.txt)
+  // Creates an HTML file and saves it in the file list (upload_file_list.txt)
   createFile(htmlTable, pngFilename, notBorder = false) {
     const htmlContent = generateHTML(
       htmlTable,
@@ -284,7 +284,7 @@ class HtmlTable2File {
     fs.appendFileSync(this.fileListPath, logEntry);
   }
 
-  // Initialisiert das Programm (Erstellt benötigte Verzeichnisse und Dateien)
+  // Initializes the program (Creates required directories and files)
   init(sessionDir, imgDirName = 'img') {
     this.sessionDir = sessionDir;
     this.imgDir = `${sessionDir}/${imgDirName}`;
@@ -301,17 +301,17 @@ class HtmlTable2File {
     }
   }
 
-  // Funktion zum Konvertieren der HTML-Datei in ein PNG
+  // Function to convert HTML file to PNG
   async convertHtmlToPng(inputHtmlFile, outputPngFile) {
-    // Lade den Chromium-Browser mit Puppeteer
+    // Load Chromium browser with Puppeteer
     const browser = await puppeteer.launch({
-      headless: true, // Setze auf false, um das Rendering zu sehen (falls gewünscht)
-      defaultViewport: null, // Setze auf null, um den gesamten Bildschirm zu verwenden
+      headless: true, // Set to false to see rendering (if desired)
+      defaultViewport: null, // Set to null to use entire screen
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
 
-    // Lade das HTML-File in den Browser
+    // Load HTML file into browser
     const filePath = `file://${path.resolve(inputHtmlFile)}`;
     //await page.goto(filePath, { waitUntil: "networkidle0" });
     await page.goto(`file://${path.resolve(inputHtmlFile)}`, {
@@ -321,7 +321,7 @@ class HtmlTable2File {
     const element = await page.$(".table-container");
     //const boundingBox = await element.boundingBox();
 
-    // Originaldimensionen ermitteln
+    // Determine original dimensions
     const dimensions = await page.evaluate(() => {
       const element = document.querySelector(".table-container");
       return {
@@ -339,22 +339,22 @@ class HtmlTable2File {
       deviceScaleFactor = 2;
     }
 
-    // Viewport an die tatsächliche Tabellenbreite anpassen
+    // Adjust viewport to actual table width
     await page.setViewport({
       width: Math.ceil(dimensions.width),
       height: Math.ceil(dimensions.height),
       deviceScaleFactor: deviceScaleFactor,
     });
 
-    // Screenshot des sichtbaren Bereichs erstellen
-    // Füge einen zusätzlichen Puffer zur Höhe hinzu, um sicherzustellen, dass der untere Rahmen vollständig erfasst wird
-    const heightWithBuffer = dimensions.height + 3; // 3 Pixel zusätzlicher Puffer für den unteren Rahmen
+    // Create screenshot of visible area
+    // Add extra buffer to height to ensure bottom border is captured completely
+    const heightWithBuffer = dimensions.height + 3; // 3 pixels extra buffer for bottom border
 
     await page.screenshot({
-      path: outputPngFile, // Speicherpfad des Screenshots
-      //fullPage: true, // Nimmt die ganze Seite auf
-      omitBackground: true, // Setzt den Hintergrund bei transparenter Seite (falls benötigt)
-      type: "png", // PNG für verlustfreie Bildqualität
+      path: outputPngFile, // Storage path of screenshot
+      //fullPage: true, // Captures full page
+      omitBackground: true, // Sets background for transparent page (if needed)
+      type: "png", // PNG for lossless image quality
       clip: {
         x: 0,
         y: 0,
@@ -364,14 +364,14 @@ class HtmlTable2File {
       },
     });
 
-    // Browser schließen
+    // Close browser
     await browser.close();
-    console.log(`PNG erstellt: ${outputPngFile}`);
+    //console.log(`PNG created: ${outputPngFile}`);
   }
 
-  // Funktion zum Verarbeiten der Datei-Liste synchron
+  // Function to process file list synchronously
   async processFileListSynchronously(onProgress) {
-    // Lies die Datei mit der Liste der HTML- und PNG-Dateinamen
+    // Read file with list of HTML and PNG filenames
     if (!fs.existsSync(this.fileListPath)) {
       return;
     }
@@ -391,7 +391,7 @@ class HtmlTable2File {
     if (onProgress) {
       onProgress('img_upload', 0, { count: 0 });
     }
-    // Verarbeitung jeder Zeile einzeln und synchron
+    // Process each line individually and synchronously
     let lineCount = 0;
     for (const line of lines) {
       lineCount++;
@@ -400,27 +400,27 @@ class HtmlTable2File {
       }
       const [inputHtmlFile, outputPngFile] = line.split(",");
 
-      // Entferne Leerzeichen und Zeilenumbrüche
+      // Remove whitespace and newlines
       const trimmedInput = inputHtmlFile.trim();
       const trimmedOutput = outputPngFile.trim();
 
       if (fs.existsSync(trimmedInput)) {
         try {
-          console.log(`Verarbeite Datei: ${trimmedInput}`);
+          //console.log(`Processing file: ${trimmedInput}`);
           await this.convertHtmlToPng(trimmedInput, trimmedOutput);
           Utils.publishImage(
             trimmedOutput,
             path.basename(trimmedOutput)
-          ); // Ersetzt Upload und Copy
+          ); // Replaces upload and copy
 
         } catch (error) {
           console.error(
-            `Fehler bei der Verarbeitung von ${trimmedInput}:`,
+            `Error processing ${trimmedInput}:`,
             error
           );
         }
       } else {
-        console.error(`HTML-Datei existiert nicht: ${trimmedInput}`);
+        console.error(`HTML file does not exist: ${trimmedInput}`);
       }
     }
     if (onProgress) {

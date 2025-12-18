@@ -26,11 +26,11 @@ class MML2SVG {
             let svgContent = svgdata.svg;
 
             if (width && height) {
-              // Extrahiere den viewBox-Wert aus dem Original-SVG
+              // Extract viewBox value from original SVG
               const viewBoxMatch = svgContent.match(/viewBox="([^"]+)"/);
               const viewBox = viewBoxMatch ? viewBoxMatch[1] : "0 0 1000 1000";
 
-              // Erstelle das neue SVG-Tag mit allen erforderlichen Attributen
+              // Create new SVG tag with all required attributes
               const newSvgTag =
                 `<svg xmlns:xlink="http://www.w3.org/1999/xlink" ` +
                 `width="${width}" height="${height}" ` +
@@ -40,7 +40,7 @@ class MML2SVG {
                 `xmlns="http://www.w3.org/2000/svg" ` +
                 `aria-labelledby="MathJax-SVG-1-Title"`;
 
-              // Ersetze das alte SVG-Tag mit dem neuen
+              // Replace old SVG tag with new one
               svgContent = svgContent.replace(/<svg[^>]+>/, newSvgTag + ">");
             }
 
