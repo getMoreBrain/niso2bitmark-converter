@@ -5,7 +5,12 @@ work/
 tmp/
 tmp_validation_test/
 temp_zip/
+temp_test/
 ignore/
 upload/
+tests/
 *.log
 .env
+server_log.txt
+public/images/
+initialload/

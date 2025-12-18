@@ -1,7 +1,7 @@
 # Niso2Bitmark Converter - Developer Documentation
 
 ## Overview
-The **Niso2Bitmark Converter** is a web-based application designed to transform NISO XML book data into the **Bitmark** format. It provides a user-friendly interface for uploading, validating, converting, and managing versions of converted books.
+The **Niso2Bitmark Converter** is a web-based application designed to transform NISO XML book data into the **Bitmark** format. It provides a simple and user-friendly interface for uploading, validating, converting, and managing versions of converted books.
 
 ## Functionality
 The application offers the following core functionalities:
@@ -67,6 +67,18 @@ To ensure consistent cross-referencing between different standards (Normen), the
 ### `xpublisherDocId2GmbDocId.json`
 -   **Purpose**: Maps Xpublisher Document IDs to GMB Document IDs across all standards.
 -   **Significance**: A single standard (Norm) consists of multiple Xpublisher Doc IDs (n:1 mapping). This file ensures that any Xpublisher ID can be correctly resolved to its corresponding GMB Document ID within the global context.
+
+## Initialization/Recovery
+This section describes processes for initializing or restoring the system's global state.
+
+### 1. FullScan (`Customer2AnchorIdMappingsFullMapping.js`)
+-   **Purpose**: Restores and initializes the global mapping files (`xpublisherDocId2GmbDocId.json` and `customer2AnchorIdMappings.json`).
+-   **Functionality**: Scans the entire `initialload/current` directory to (re)build all references across all standards (Normen). This ensures that the global integrity of cross-references is maintained or restored.
+
+### 2. InitialLoad (`initialLoad.js`)
+-   **Purpose**: Bulk transformation of all standards to create a complete `<currentversion>`.
+-   **Prerequisite**: A **FullScan** must be completed first to ensure mappings are available.
+-   **Functionality**: Iterates through all standards located in `initialload/`, transforms each one using the standard `Converter` logic, and aggregates the results into `versions/current`. The result is a fully populated and versioned state of all standards.
 
 ## Architecture
 

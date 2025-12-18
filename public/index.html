@@ -33,6 +33,46 @@
                         </a>
                     </div>
                 </div>
+                <!-- Language Switcher -->
+                <div class="flex items-center ml-auto mr-4">
+                    <select id="lang-select" onchange="changeLanguage(this.value)"
+                        class="bg-[#2a2a2a] text-white border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary">
+                        <option value="de">DE</option>
+                        <option value="en">EN</option>
+                        <option value="fr">FR</option>
+                        <option value="it">IT</option>
+                    </select>
+                </div>
+
+                <!-- Dev Mode Toggle -->
+                <div class="flex items-center ml-4 mr-4">
+                    <label class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="dev-mode-toggle" class="sr-only peer" onchange="toggleDevMode()">
+                            <div
+                                class="w-10 h-4 bg-gray-400 rounded-full shadow-inner peer-checked:bg-green-400 transition">
+                            </div>
+                            <div
+                                class="dot absolute w-6 h-6 bg-white rounded-full shadow -left-1 -top-1 transition transform peer-checked:translate-x-full">
+                            </div>
+                        </div>
+                        <div class="ml-3 text-white text-sm font-medium">
+                            Dev Mode
+                        </div>
+                    </label>
+                </div>
+
+                <!-- New Upload Button -->
+                <div class="flex items-center">
+                    <button onclick="startNewUpload()"
+                        class="bg-primary hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center shadow-lg transition transform hover:-translate-y-0.5 ml-4">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        <span data-i18n="btn_new_upload">New Upload</span>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -80,7 +120,8 @@
                         <div
                             class="w-10 h-10 mx-auto bg-gray-700 text-gray-400 rounded-full flex items-center justify-center font-bold">
                             4</div>
-                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_preview">Vorschau</div>
+                        <div class="mt-2 text-sm font-medium text-gray-400" data-i18n="step_consistency">
+                            Konsistenzprüfung</div>
                         <div class="absolute top-5 left-1/2 w-full h-1 bg-gray-700 -z-10"></div>
                     </div>
                     <div class="step-item flex-1 relative text-center z-10" id="step-5-indicator">
@@ -115,6 +156,12 @@
                             <p class="text-xs text-gray-500" data-i18n="upload_hint">ZIP Dateien (<NormID>_....zip)</p>
                         </div>
                         <input id="file-upload" type="file" class="hidden" accept=".zip" />
+                    </div>
+                    <div id="upload-progress" class="hidden my-12 text-center">
+                        <div class="flex justify-center mb-4">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                        <p class="text-gray-300">Upload läuft...</p>
                     </div>
                     <div id="upload-status" class="mt-4 text-center hidden"></div>
                 </div>
@@ -152,74 +199,86 @@
                             <span id="progress-text" class="text-gray-600 animate-pulse">Initialisiere...</span>
                             <span id="current-book" class="text-primary font-bold"></span>
                         </div>
-                        <div class="flex justify-center space-x-4 mt-8">
-                            <!-- Morphing Icon Animation Placeholder -->
-                            <div class="text-4xl">📦 ➡️ 📄 ➡️ 📝</div>
-                        </div>
+                        <!-- Morphing Icon Animation Placeholder Removed -->
                     </div>
                 </div>
-
-                <!-- Step 4: Preview (formerly 3) -->
+                <!-- Step 4: Consistency Check -->
+                <!-- Step 4: Consistency Check -->
                 <div id="step-4" class="step-content hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-semibold text-white" data-i18n="preview_title">Vorschau</h2>
-                        <button onclick="downloadPreview()"
-                            class="bg-white text-gray-700 border border-gray-300 font-medium py-2 px-4 rounded hover:bg-gray-50"
-                            data-i18n="btn_download_bitmark">
-                            Download .bitmark
+                    <h2 class="text-2xl font-semibold mb-6 text-white" data-i18n="consistency_title">Konsistenzprüfung
+                    </h2>
+
+                    <!-- Header / Stats -->
+                    <div id="report-stats"
+                        class="flex items-center space-x-6 mb-6 p-4 bg-[#2a2a2a] rounded border border-gray-700">
+                        <!-- Populated by JS -->
+                        <div class="text-gray-400">Lade Bericht...</div>
+                    </div>
+
+                    <!-- Report List -->
+                    <div id="report-list" class="space-y-4 mb-8 max-h-[500px] overflow-y-auto pr-2">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button id="btn-download-bitmark" onclick="downloadBitmark()"
+                            class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded flex items-center shadow-lg transition transform hover:-translate-y-0.5">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <span data-i18n="btn_download_bitmark">Download .bitmark</span>
                         </button>
-                    </div>
-                    <div class="w-full h-96 border rounded bg-gray-800 text-gray-100 p-4 font-mono text-sm overflow-auto"
-                        id="preview-code">
-                        Lade Vorschau...
-                    </div>
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="goToStep(5)"
-                            class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded"
+                        <button id="btn-next-step" onclick="goToStep(5)"
+                            class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             data-i18n="btn_next">Weiter</button>
                     </div>
                 </div>
 
                 <!-- Step 5: Release (formerly 4) -->
-                <div id="step-5" class="step-content hidden max-w-md mx-auto">
-                    <h2 class="text-2xl font-semibold mb-6 text-center text-white" data-i18n="release_title">Release
-                        bestätigen</h2>
-                    <form id="release-form" onsubmit="handleRelease(event)">
-                        <div class="mb-4">
-                            <label class="block text-gray-300 text-sm font-bold mb-2" for="release-note"
-                                data-i18n="lbl_release_note">
-                                Kurzbeschreibung / Release Note
-                            </label>
-                            <textarea id="release-note"
-                                class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                                rows="3" placeholder="Was hat sich geändert?" oninput="checkReleaseForm()"></textarea>
-                            <p class="text-right text-xs text-gray-500"><span id="char-count">0</span>/15 Zeichen</p>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-gray-300 text-sm font-bold mb-2" for="release-name"
-                                data-i18n="lbl_release_name">
-                                Name des Releasers
-                            </label>
-                            <input id="release-name" type="text"
-                                class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="Ihr Name" oninput="checkReleaseForm()">
-                        </div>
-                        <!-- Checkbox removed -->
-                        <div class="flex items-center justify-between">
-                            <button type="button" onclick="goToStep(1); resetState();"
-                                class="text-gray-400 hover:text-white font-bold py-2 px-4 rounded"
-                                data-i18n="btn_cancel">
-                                Abbrechen
-                            </button>
-                            <button type="submit" id="btn-release"
-                                class="bg-gray-600 text-white font-bold py-2 px-6 rounded cursor-not-allowed" disabled
-                                data-i18n="btn_publish">
-                                Veröffentlichen
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                <div id="step-5" class="step-content hidden">
+                    <div class="max-w-md mx-auto">
+                        <h2 class="text-2xl font-semibold mb-6 text-center text-white" data-i18n="release_title">Release
+                            bestätigen</h2>
+                        <form id="release-form" onsubmit="handleRelease(event)">
+                            <div class="mb-4">
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="release-note"
+                                    data-i18n="lbl_release_note">
+                                    Kurzbeschreibung / Release Note
+                                </label>
+                                <textarea id="release-note"
+                                    class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                                    rows="3" placeholder="Was hat sich geändert?"
+                                    oninput="checkReleaseForm()"></textarea>
+                                <p class="text-right text-xs text-gray-500"><span id="char-count">0</span>/15 Zeichen
+                                </p>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="release-name"
+                                    data-i18n="lbl_release_name">
+                                    Name des Releasers
+                                </label>
+                                <input id="release-name" type="text"
+                                    class="gmb-input shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="Ihr Name" oninput="checkReleaseForm()">
+                            </div>
+                            <!-- Checkbox removed -->
+                            <div class="flex items-center justify-between">
+                                <button type="button" onclick="goToStep(1); resetState();"
+                                    class="text-gray-400 hover:text-white font-bold py-2 px-4 rounded"
+                                    data-i18n="btn_cancel">
+                                    Abbrechen
+                                </button>
+                                <button type="submit" id="btn-release"
+                                    class="bg-gray-600 text-white font-bold py-2 px-6 rounded cursor-not-allowed"
+                                    disabled data-i18n="btn_publish">
+                                    Veröffentlichen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
 
+                </div>
             </div>
         </section>
 
@@ -281,16 +340,23 @@
         let socket;
         let i18n = {};
         let currentLang = 'en';
+        let isDevMode = false;
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
             // 1. Detect Lang
-            const browserLang = navigator.language || navigator.userLanguage;
-            currentLang = browserLang.startsWith('de') ? 'de' : 'en';
+            // 1. Detect Lang
+            const browserLang = (navigator.language || navigator.userLanguage).substring(0, 2);
+            const supported = ['de', 'en', 'fr', 'it'];
+            currentLang = supported.includes(browserLang) ? browserLang : 'en';
+
+            // Set Dropdown
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) langSelect.value = currentLang;
 
             // 2. Load Messages
             try {
-                const res = await fetch('/api/messages');
+                const res = await fetch('api/messages');
                 i18n = await res.json();
                 applyTranslations();
             } catch (e) { console.error("I18n load failed"); }
@@ -313,6 +379,11 @@
                 text = text.replace(`{${k}}`, params[k]);
             });
             return text;
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            applyTranslations();
         }
 
         function applyTranslations() {
@@ -349,6 +420,11 @@
 
         // Stepper Logic
         function goToStep(step) {
+            if (isDevMode && step === 5) {
+                // Block release step in dev mode
+                return;
+            }
+
             // Hide all contents
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
             // Show target
@@ -357,6 +433,12 @@
             // Update indicators
             for (let i = 1; i <= 5; i++) {
                 const indicator = document.getElementById(`step-${i}-indicator`).querySelector('div');
+                const indicatorContainer = document.getElementById(`step-${i}-indicator`);
+
+                // Hide Release Step in Dev Mode completely or just disable? 
+                // Requirement: "nicht möglich einen Release durchzuführen" & "UI soll slider-schalter ... angezeigt werden"
+                // Let's grey it out visually in Dev Mode or keep it but block access.
+                // Better: keep it visible but disabled/blocked.
 
                 if (i <= step) {
                     indicator.classList.remove('bg-gray-700', 'text-gray-400');
@@ -367,6 +449,44 @@
                 }
             }
             currentStep = step;
+
+            // If entering Consistency Check, load report
+            if (step === 4) {
+                loadConsistencyReport();
+            }
+        }
+
+        function toggleDevMode() {
+            const toggle = document.getElementById('dev-mode-toggle');
+            isDevMode = toggle.checked;
+            console.log("DevMode:", isDevMode);
+
+            const btnNext = document.getElementById('btn-next-step');
+            const btnDownload = document.getElementById('btn-download-bitmark');
+            const step5Ind = document.getElementById('step-5-indicator');
+
+            if (isDevMode) {
+                // Logic for Dev Mode ON
+                if (btnNext) btnNext.classList.add('hidden');
+                if (btnDownload) btnDownload.classList.remove('hidden');
+                if (step5Ind) step5Ind.classList.add('opacity-50', 'cursor-not-allowed');
+                // If we are on step 5, go back to 4?
+                if (currentStep === 5) goToStep(4);
+            } else {
+                // Logic for Dev Mode OFF
+                if (btnNext) btnNext.classList.remove('hidden');
+                if (btnDownload) btnDownload.classList.add('hidden');
+                if (step5Ind) step5Ind.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function downloadBitmark() {
+            if (!sessionData.sessionID || !sessionData.normID) {
+                showToast("Keine Session Daten vorhanden", "error");
+                return;
+            }
+            // Use standard window location to trigger download
+            window.location.href = `api/download-session/${sessionData.sessionID}/${sessionData.normID}`;
         }
 
         function resetState() {
@@ -377,7 +497,7 @@
             document.getElementById('current-book').innerText = '';
             document.getElementById('transform-idle').classList.remove('hidden');
             document.getElementById('transform-progress').classList.add('hidden');
-            document.getElementById('preview-code').innerText = '';
+            // document.getElementById('preview-code').innerText = ''; // Removed
             document.getElementById('release-note').value = '';
             document.getElementById('release-name').value = '';
             // document.getElementById('release-confirm').checked = false;
@@ -385,6 +505,123 @@
             // Hide NormID Display
             document.getElementById('normid-display').classList.add('opacity-0');
             document.getElementById('normid-value').innerText = '';
+        }
+
+        // Load Consistency Report Logic
+        async function loadConsistencyReport() {
+            const statsDiv = document.getElementById('report-stats');
+            const listDiv = document.getElementById('report-list');
+            const btnNext = document.getElementById('btn-next-step');
+
+            statsDiv.innerHTML = '<div class="text-gray-400 animate-pulse">Lade Bericht...</div>';
+            listDiv.innerHTML = '';
+            btnNext.disabled = true; // Block by default until loaded and checked
+
+            try {
+                const res = await fetch(`api/consistency-report/${sessionData.sessionID}`);
+                const logs = await res.json();
+
+                // Sort: Severity DESC (3=Error, 2=Warn, 1=Info), then Category ASC, then Key ASC
+                logs.sort((a, b) => {
+                    if (b.severity !== a.severity) return b.severity - a.severity;
+                    if (a.category !== b.category) return a.category - b.category;
+                    return (a.errorMsg || "").localeCompare(b.errorMsg || "");
+                });
+
+                // Counts
+                // Counts
+                const errorCount = logs.filter(l => l.severity === 3).length;
+                const warnCount = logs.filter(l => l.severity === 2).length;
+                const infoCount = logs.filter(l => l.severity === 1).length;
+
+                // Render Stats
+                statsDiv.innerHTML = `
+                    <div class="flex items-center mr-6">
+                        <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span class="text-white font-bold mr-1">${errorCount}</span>
+                        <span class="text-gray-400 text-sm">Fehler</span>
+                    </div>
+                    <div class="flex items-center mr-6">
+                        <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                        <span class="text-white font-bold mr-1">${warnCount}</span>
+                        <span class="text-gray-400 text-sm">Warnungen</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                        <span class="text-white font-bold mr-1">${infoCount}</span>
+                        <span class="text-gray-400 text-sm">Infos</span>
+                    </div>
+                `;
+
+                // Logic: Block if Errors > 0
+                if (errorCount > 0) {
+                    btnNext.disabled = true;
+                    btnNext.classList.add('opacity-50', 'cursor-not-allowed');
+                    btnNext.title = "Bitte beheben Sie alle Fehler vor dem Release.";
+                } else {
+                    btnNext.disabled = false;
+                    btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnNext.title = "";
+                }
+
+                // Always allow download bitmark in step 4
+                document.getElementById('btn-download-bitmark').classList.remove('hidden');
+
+                if (logs.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center text-gray-500 py-8">Keine Probleme gefunden. ✅</div>';
+                    return;
+                }
+
+                // Render List
+                logs.forEach(log => {
+                    let colorClass = 'text-gray-400';
+                    let icon = '<svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'; // Info default
+
+                    if (log.severity === 3) { // Error
+                        colorClass = 'text-red-400';
+                        icon = '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                    } else if (log.severity === 2) { // Warn
+                        colorClass = 'text-yellow-400';
+                        icon = '<svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                    } else {
+                        // Info (1)
+                        colorClass = 'text-blue-400';
+                        icon = '<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                    }
+
+                    let categoryLabel = 'Allgemein';
+                    if (log.category === 1) categoryLabel = 'Link';
+                    else if (log.category === 2) categoryLabel = 'XML-Structure';
+                    else if (log.category === 3) categoryLabel = 'Content';
+
+                    const msg = t(log.errorMsg, log.reference || {});
+
+                    // Reference details
+                    let refInfo = '';
+                    if (log.reference) {
+                        refInfo += `<span class="bg-gray-700 px-1 rounded ml-2 text-gray-300 font-mono">ID: ${log.reference}</span>`;
+                    }
+
+                    const itemHtml = `
+                        <div class="bg-[#1f1f1f] p-4 rounded border border-gray-700 flex items-start space-x-3 hover:bg-[#252525] transition group">
+                            <div class="mt-1 flex-shrink-0">${icon}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center flex-wrap mb-1">
+                                    <span class="text-xs font-medium uppercase tracking-wide text-gray-500 border border-gray-600 px-2 py-0.5 rounded mr-2">${categoryLabel}</span>
+                                    <span class="text-xs text-gray-600 font-mono mr-2" title="Message Key">[${log.errorMsg}]</span>
+                                    <div class="text-xs">${refInfo}</div>
+                                </div>
+                                <p class="text-sm font-medium ${colorClass} break-words">${msg}</p>
+                            </div>
+                        </div>
+                    `;
+                    listDiv.insertAdjacentHTML('beforeend', itemHtml);
+                });
+
+            } catch (e) {
+                console.error("Error loading report:", e);
+                statsDiv.innerHTML = '<div class="text-red-500">Fehler beim Laden des Berichts.</div>';
+            }
         }
 
         // Step 1: Upload
@@ -424,20 +661,25 @@
             formData.append('file', file);
 
             const statusDiv = document.getElementById('upload-status');
-            statusDiv.classList.remove('hidden');
-            statusDiv.innerHTML = `<span class="text-gray-500">${t('uploading_file', { filename: file.name })}</span>`;
+            const dropZone = document.getElementById('drop-zone');
+            const uploadProgress = document.getElementById('upload-progress');
+
+            // Lock UI
+            dropZone.classList.add('hidden');
+            statusDiv.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
 
             // Reset partial state for new session (keep current view until success)
             document.getElementById('progress-bar').style.width = '0%';
             document.getElementById('current-book').innerText = '';
-            document.getElementById('preview-code').innerText = '';
+            // document.getElementById('preview-code').innerText = ''; // Removed
             document.getElementById('transform-idle').classList.remove('hidden');
             document.getElementById('transform-progress').classList.add('hidden');
 
-            document.body.style.cursor = 'wait'; // NEW: Wait cursor
+            // document.body.style.cursor = 'wait'; // NEW: Wait cursor
 
             try {
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const res = await fetch('api/upload', { method: 'POST', body: formData });
                 const data = await res.json();
 
                 if (res.ok) {
@@ -454,6 +696,8 @@
                     setTimeout(() => {
                         goToStep(2);
                         checkContent();
+                        // Hide bitmark download from step 4 initially (clean slate)
+                        document.getElementById('btn-download-bitmark').classList.add('hidden');
                     }, 500);
 
                 } else {
@@ -469,9 +713,14 @@
                     showToast(data.message + (data.validIDs ? " (Details)" : ""), 'error');
                 }
             } catch (e) {
-                statusDiv.innerHTML = `<div class="text-red-600 font-bold">❌ Netzwerkfehler</div>`;
+                statusDiv.innerHTML = `<div class="text-red-600 font-bold">❌ ${t('unexpected_error')} ${e.message}</div>`;
+                console.error(e)
             } finally {
-                document.body.style.cursor = 'default'; // Reset cursor
+                // document.body.style.cursor = 'default'; // Reset cursor
+                // Restore UI
+                document.getElementById('drop-zone').classList.remove('hidden');
+                document.getElementById('upload-progress').classList.add('hidden');
+                document.getElementById('upload-status').classList.remove('hidden');
             }
         }
 
@@ -481,7 +730,7 @@
             progressDiv.classList.remove('hidden');
 
             try {
-                const res = await fetch('/api/check-content', {
+                const res = await fetch('api/check-content', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -525,7 +774,7 @@
                 }
 
             } catch (e) {
-                showToast(t('network_error'), 'error');
+                showToast(t('network_error' + (e.message ? ': ' + e.message : '')), 'error');
                 console.error(e);
             }
         }
@@ -536,7 +785,7 @@
             document.getElementById('transform-progress').classList.remove('hidden');
 
             try {
-                const res = await fetch('/api/transform', {
+                const res = await fetch('api/transform', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(sessionData)
@@ -562,9 +811,46 @@
             }
         }
 
+        function startNewUpload() {
+            if (confirm(t('confirm_new_upload'))) {
+                resetState();
+                switchTab('converter');
+                goToStep(1);
+            }
+        }
+
         // WebSocket
         function connectWebSocket() {
-            socket = new WebSocket(`ws://${window.location.host}`);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // Construct path based on current location to support proxies/subpaths
+            // If we are at /x-publisher/, we want ws://host/x-publisher/
+            // Note: Server accepts upgrade on any path or we assume it matches http path context
+            let path = window.location.pathname;
+            if (!path.endsWith('/')) {
+                path = path.substring(0, path.lastIndexOf('/') + 1);
+            }
+            // Use 'api/ws' relative path
+            const wsUrl = `${protocol}//${window.location.host}${path}api/ws`;
+            console.log("Connecting to WebSocket:", wsUrl);
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                console.log('WebSocket connected');
+                // showToast('WS Connected', 'success'); // Optional, maybe too noisy
+            };
+
+            socket.onerror = (e) => {
+                console.error('WebSocket Error:', e);
+                // Try to reconnect or warn?
+                showToast('Verbindung (WS) unterbrochen', 'error');
+            };
+
+            socket.onclose = (e) => {
+                console.log('WebSocket Closed:', e.code, e.reason);
+                if (!e.wasClean) {
+                    showToast('Verbindung zum Server (WS) verloren. Bitte Seite neu laden.', 'error');
+                }
+            };
 
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -588,7 +874,7 @@
                     if (data.completed) {
                         setTimeout(() => {
                             showToast(t('check_success'), 'success'); // Reuse success msg or new one 'Transformation Done'
-                            loadPreview();
+                            // loadPreview(); // Preview removed
                             goToStep(4);
                         }, 500);
                     }
@@ -603,31 +889,17 @@
             };
         }
 
+        /* 
+        // Preview functions removed
         // Step 3: Preview
         async function loadPreview() {
-            try {
-                const res = await fetch(`/api/preview/${sessionData.sessionID}/${sessionData.normID}`);
-                if (res.ok) {
-                    const text = await res.text();
-                    document.getElementById('preview-code').innerText = text;
-                }
-            } catch (e) {
-                document.getElementById('preview-code').innerText = "Fehler beim Laden der Vorschau.";
-            }
+             ...
         }
-
+ 
         function downloadPreview() {
-            // In current API there is no direct "download single file" unless we use the preview route.
-            // We can trigger download via a Blob.
-            const text = document.getElementById('preview-code').innerText;
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${sessionData.normID}.bitmark`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
+             ...
+        } 
+        */
 
         // Step 4: Release
         function checkReleaseForm() {
@@ -660,7 +932,7 @@
             // const confirm = document.getElementById('release-confirm').checked;
 
             try {
-                const res = await fetch('/api/release', {
+                const res = await fetch('api/release', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -691,7 +963,7 @@
 
         async function loadVersions() {
             try {
-                const res = await fetch('/api/versions');
+                const res = await fetch('api/versions');
                 versionsCache = await res.json();
                 renderVersions(versionsCache);
             } catch (e) {
@@ -728,12 +1000,25 @@
                     if (!isNaN(d.getTime())) date = d.toLocaleString('de-CH');
                 } catch (e) { }
 
+                // Main Row
                 const tr = document.createElement('tr');
+                tr.classList.add('hover:bg-gray-800', 'transition-colors', 'cursor-pointer', 'border-b', 'border-gray-800');
+                tr.onclick = (e) => {
+                    // Prevent toggle when clicking specific buttons/links
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
+                    toggleVersion(ver.id);
+                };
+
                 tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ver.type === 'current' ? 'bg-green-900 text-green-200' : 'bg-gray-700 text-gray-300'}">
-                            ${ver.type === 'current' ? 'Live' : 'Archiv'}
-                        </span>
+                        <div class="flex items-center">
+                            <svg id="icon-${ver.id}" class="w-5 h-5 text-gray-500 transform transition-transform mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ver.type === 'current' ? 'bg-green-900 text-green-200' : 'bg-gray-700 text-gray-300'}">
+                                ${ver.type === 'current' ? 'Live' : 'Archiv'}
+                            </span>
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-medium">
                         ${ver.id}
@@ -747,20 +1032,65 @@
                         ${date}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div class="flex flex-col items-end space-y-1">
-                            <a href="/api/download/${ver.id}" class="text-primary hover:text-green-300 mr-4" title="${t('download')} (Full)">${t('download')} (All)</a>
-                            ${ver.books && ver.books.length > 0 ? ver.books.map(book => `
-                                <a href="/api/download/${ver.id}/${book}" class="text-xs text-gray-400 hover:text-white mr-4" title="${t('download')} ${book}">
-                                    📘 ${book}
-                                </a>
-                            `).join('') : ''}
+                         <div class="flex items-center justify-end space-x-4">
+                            <a href="api/download/${ver.id}" class="text-primary hover:text-green-300 text-sm font-bold flex items-center" title="${t('download')} (Full)" onclick="event.stopPropagation()">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                ZIP (All)
+                            </a>
+                            ${ver.type !== 'current' ? `
+                                <button onclick="handleRollback('${ver.id}'); event.stopPropagation();" class="text-red-400 hover:text-red-300" title="${t('rollback')}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                </button>
+                            ` : ''}
                         </div>
-                        
-                        ${ver.type !== 'current' ? `<div class="mt-2"><button onclick="handleRollback('${ver.id}')" class="text-red-400 hover:text-red-300">${t('rollback')}</button></div>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
+
+                // Details Row
+                const trDetails = document.createElement('tr');
+                trDetails.id = `details-${ver.id}`;
+                trDetails.classList.add('hidden', 'bg-[#1a1a1a]');
+
+                let booksHtml = '';
+                if (ver.books && ver.books.length > 0) {
+                    booksHtml = `<div class="grid grid-cols-7 gap-2 p-3">`;
+                    ver.books.forEach(book => {
+                        booksHtml += `
+                            <a href="api/download/${ver.id}/${book}" target="_blank" class="block p-2 bg-[#2a2a2a] rounded hover:bg-[#333] border border-gray-700 hover:border-primary transition group text-center" title="${t('download')} ${book}">
+                                <div class="flex justify-center mb-1">
+                                     <svg class="w-6 h-6 text-gray-500 group-hover:text-primary transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-xs text-gray-300 font-medium truncate">${book}</div>
+                            </a>
+                        `;
+                    });
+                    booksHtml += `</div>`;
+                } else {
+                    booksHtml = `<div class="p-4 text-sm text-gray-500 italic text-center">Keine Bitmark-Dateien in dieser Version.</div>`;
+                }
+
+                trDetails.innerHTML = `
+                    <td colspan="5" class="p-0 border-b border-gray-800 shadow-inner">
+                        ${booksHtml}
+                    </td>
+                `;
+                tbody.appendChild(trDetails);
             });
+        }
+
+        function toggleVersion(id) {
+            const details = document.getElementById(`details-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                icon.classList.add('rotate-90');
+            } else {
+                details.classList.add('hidden');
+                icon.classList.remove('rotate-90');
+            }
         }
 
         async function handleRollback(id) {
@@ -769,7 +1099,7 @@
             }
 
             try {
-                const res = await fetch('/api/rollback', {
+                const res = await fetch('api/rollback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ targetVersionId: id })

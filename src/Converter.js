@@ -4,9 +4,8 @@ const fs = require("fs-extra");
 const path = require("path");
 const NINParser = require("./transformer/NINParser");
 const BitmarkTransformer = require("./transformer/BitmarkTransformer");
-// Note: These mappers might need to be required if we were manually initializing them, 
-// but BitmarkTransformer handles some. However, we need to ensure files exist.
 const XpublisherDocId2GmbDocMapper = require("./transformer/XpublisherDocId2GmbDocMapper.js");
+const TransformerLogger = require("./transformer/TransformerLogger");
 
 class Converter {
     /**
@@ -14,8 +13,9 @@ class Converter {
      * @param {string} normID - The Norm ID (Book Name)
      * @param {object} config - Configuration { workDir, uploadDir, ... }
      * @param {function} broadcast - Callback (data) => void for WebSocket status updates
+     * @param {string} originalFilename - The original name of the uploaded zip file
      */
-    constructor(sessionID, normID, config, broadcast) {
+    constructor(sessionID, normID, config, broadcast, originalFilename) {
         this.sessionID = sessionID;
         this.normID = normID;
         this.workDir = path.join(config.workDir, sessionID);
@@ -23,16 +23,23 @@ class Converter {
         this.xmlDir = path.join(this.inputDir, `${normID}_XML`); // The actual XML content
         this.broadcast = broadcast;
         this.config = config;
+        this.originalFilename = originalFilename;
     }
 
-    async start() {
+    async start(skipIfNoGmbId = false) {
         try {
             this.sendProgress(null, 0, false, null, 'transformation_started');
+
+            // Initialize Logger
+            this.logger = new TransformerLogger();
 
             // 1. Setup & Checks
             if (!fs.existsSync(this.xmlDir)) {
                 throw new Error(`Input directory not found: ${this.xmlDir}`);
             }
+
+            // Create convert.log
+            this.createLogFile();
 
             // We use the original directory for transformation
             const nisoFilePath = this.findNisoFilePath(this.xmlDir);
@@ -40,13 +47,13 @@ class Converter {
                 throw new Error("content.xml not found in directory");
             }
 
-            let metadata = { convert_type: 'sng', lang: 'de', gmbdocid: this.normID }; // Defaults
+            let metadata = null;
             // UPDATED: Use book_registry.json in ./config/
-            const metadataFile = path.resolve(__dirname, "../config/book_registry.json");
+            const bookRegistryPath = path.resolve(__dirname, "../config/book_registry.json");
 
-            if (fs.existsSync(metadataFile)) {
+            if (fs.existsSync(bookRegistryPath)) {
                 try {
-                    const raw = fs.readFileSync(metadataFile, "utf8");
+                    const raw = fs.readFileSync(bookRegistryPath, "utf8");
                     const cleanRaw = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
                     const metaJson = JSON.parse(cleanRaw);
                     // Key is usually directory name like "SN411000_2025_de_XML"
@@ -58,43 +65,46 @@ class Converter {
                 } catch (e) {
                     console.warn("Error reading metadata, using defaults", e);
                 }
-            } else {
-                // Try to infer from filename/path using app.js logic if possible, 
-                // but simpler: check normID for lang
-                if (this.normID.includes("_fr")) metadata.lang = "fr";
-                if (this.normID.includes("_it")) metadata.lang = "it";
-                if (this.normID.includes("_de")) metadata.lang = "de";
-                if (this.normID.includes("_en")) metadata.lang = "en";
-                if (this.normID.includes("_es")) metadata.lang = "es";
+            }
+            if (!metadata) {
+                throw new Error("Metadata not found for normID: " + this.normID);
             }
 
-            // 2.1 Update/Generate XpublisherDocId Mapping
-            this.sendProgress(null, 1, false, null, 'scanning_and_updating_doc_ids');
-            const docIdMapper = new XpublisherDocId2GmbDocMapper(this.workDir, metadataFile);
-            docIdMapper.fullScan();
+            // Start 2.1 Update/Generate XpublisherDocId Mapping
+            this.sendProgress(null, 5, false, null, 'scanning_and_updating_doc_ids');
+            const docIdMapper = new XpublisherDocId2GmbDocMapper(this.workDir, bookRegistryPath);
+            //docIdMapper.fullScan();
+            docIdMapper.mapXpsDocId2GmbId(this.normID);
+
+            this.sendProgress(null, 8, false, null, 'scanning_and_updating_doc_ids');
+
+            // Check if gmbdocid is present.
+            if (!metadata.gmbdocid || metadata.gmbdocid.trim().length === 0) {
+                if (skipIfNoGmbId) {
+                    console.warn(`[Converter] Skipping conversion for ${this.normID} because gmbdocid is missing.`);
+                    this.sendProgress("Skipping conversion (no GMB ID)", 100, true, null, 'transformation_skipped_no_id');
+                    return;
+                } else {
+                    throw new Error("Metadata gmbdocid not found for normID: " + this.normID + " --> check book_registry.json");
+                }
+            }
+
+            if (!metadata.parse_type || metadata.parse_type.trim().length === 0) {
+                throw new Error("Metadata parse_type not found for normID: " + this.normID + " --> check book_registry.json");
+            }
+            if (!metadata.lang || metadata.lang.trim().length === 0) {
+                throw new Error("Metadata lang not found for normID: " + this.normID + " --> check book_registry.json");
+            }
 
             // CustomerId2AnchorIdFullMapper initialisieren, Fullscan dauert lange
             //const mapper = new CustomerId2AnchorIdFullMapper();
             //mapper.mapFull(publishpath, publishpath, metadataFile);
 
             // 3. Transform to JSON
-            this.sendProgress(null, 0, false, null, 'transform_to_json');
+            this.sendProgress(null, 8, false, null, 'transform_to_json');
 
             const jsonProgressCallback = (messageKey, percent, params) => {
                 this.sendProgress(null, percent, false, null, messageKey, params);
-                /*
-                if (typeof data === 'object' && data.type === 'doc_refs') {
-                    // Granular update: "Update Dokumentreferenzen: <count>"
-                    // We pass null for percent to avoid moving the bar, or keep at 12?
-                    // Let's keep the bar at 12% but update the text.
-                    this.sendProgress(null, 12, false, null, 'update_doc_refs', { count: data.count });
-                } else {
-                    // Standard percentage update (legacy or file stream progress)
-                    const percent = data;
-                    const effectivePercent = 12 + Math.round((percent * 0.1)); // 12% to 22%
-                    this.sendProgress(`Transform to JSON (${percent}%)`, effectivePercent);
-                }
-                */
             };
 
             const tempJsonDir = path.join(path.resolve(__dirname, '..'), 'tmp', 'json', this.sessionID);
@@ -107,31 +117,15 @@ class Converter {
                 this.workDir, // mapperPath
                 jsonProgressCallback,
                 tempJsonDir,
-                csvOutputDir
+                csvOutputDir,
+                this.logger
             );
 
-
-            // Move ot.json IS NO LONGER NEEDED if it is already in tmp/json/<sessionid>
-            // But we might want to copy it to workDir for debugging/consistency if needed globally 
-            // The original requirement says: "Das file ot.json soll in das Verzeichnis tmp/json/<sessionid> geschrieben werden"
-            // So we can leave it there. 
-            // However, existing code might expect it in workDir or return value of parse is path to it.
-            // NINParser returns the path.
-
-            // OPTIONAL: Copy to workDir if downstream needs it there, but requirement implies move.
-            // Let's ensure the promise resolves with the path in tmp/json/<sessionid>
-
-            // Legacy move to workDir (removing execution of move operation, just log or skip)
-            // const targetJsonPath = path.join(this.workDir, "ot.json");
-            // await fs.move(jsonPath, targetJsonPath, { overwrite: true });
-
-            // Update jsonPath to point to the new location if needed, but jsonPath from parse() is already absolute.
-
-
-            // 4. Transform to Bitmark 
+            this.sendProgress(null, 100, false, null, 'transform_to_json');
+            // Transform to Bitmark 
             this.sendProgress(null, 0, false, null, 'convert_to_bitmark');
 
-            // 4a. Rename Bitmark File if gmbdocid is present
+            // Rename Bitmark File if gmbdocid is present
             let bitmarkFilename = `${this.normID}.bitmark`;
             if (metadata.gmbdocid && metadata.gmbdocid.trim().length > 0) {
                 // Ensure the extension is .bitmark
@@ -139,43 +133,6 @@ class Converter {
                 if (!docId.endsWith('.bitmark')) docId += '.bitmark';
                 bitmarkFilename = docId;
             }
-
-            /*
-            // 4b. Copy PDF if present in the ZIP content
-            // Search for PDF recursively or in specific folders?
-            // "ist ein PDF File im ZIP-File enthalten" -> Find any PDF in inputDir
-            try {
-                const findPdf = (dir) => {
-                    const files = fs.readdirSync(dir);
-                    for (const file of files) {
-                        const fullPath = path.join(dir, file);
-                        const stat = fs.statSync(fullPath);
-                        if (stat.isDirectory()) {
-                            const found = findPdf(fullPath);
-                            if (found) return found;
-                        } else if (file.toLowerCase().endsWith('.pdf')) {
-                            return fullPath;
-                        }
-                    }
-                    return null;
-                };
-
-                const pdfPath = findPdf(this.inputDir);
-                if (pdfPath) {
-                    // Copy to "Ordner auf Ebene NormID" => this.inputDir
-                    const destPdfName = path.basename(pdfPath);
-                    const destPdfPath = path.join(this.inputDir, destPdfName);
-
-                    // Only copy if it's not already there (path different)
-                    if (path.resolve(pdfPath) !== path.resolve(destPdfPath)) {
-                        fs.copyFileSync(pdfPath, destPdfPath);
-                        console.log(`Copied PDF from ${pdfPath} to ${destPdfPath}`);
-                    }
-                }
-            } catch (err) {
-                console.warn("Error finding/copying PDF:", err);
-            }
-            */
 
             // BitmarkTransformer expects outputPath to be a file path
             const outputBitmarkPath = path.join(this.inputDir, bitmarkFilename); // "unter work/sessionid/<NormID>" -> inputDir is sessionID/<NormID>
@@ -192,8 +149,15 @@ class Converter {
                 path.dirname(nisoFilePath), // resourcePath (images etc)
                 outputBitmarkPath,
                 this.workDir, // mapperPath
-                bitmarkProgressCallback
+                bookRegistryPath,
+                bitmarkProgressCallback,
+                this.logger
             );
+
+            // Save Consistency Report
+            const reportPath = path.join(this.workDir, 'consistency_report.json');
+            fs.writeJsonSync(reportPath, this.logger.logs, { spaces: 2 });
+            console.log(`Consistency report saved to ${reportPath}`);
 
             this.sendProgress(null, 100, true, null, 'transformation_finished');
 
@@ -235,6 +199,41 @@ class Converter {
             }
         }
         return null;
+    }
+
+    createLogFile() {
+        try {
+            // sessionID format: YYYYMMDD_HHMMSS_UUID
+            // Example: 20251215_105551_...
+            const parts = this.sessionID.split('_');
+            let timestampStr = "Unknown";
+
+            if (parts.length >= 2) {
+                const datePart = parts[0]; // YYYYMMDD
+                const timePart = parts[1]; // HHMMSS
+
+                if (datePart.length === 8 && timePart.length === 6) {
+                    const yyyy = datePart.substring(0, 4);
+                    const mm = datePart.substring(4, 6);
+                    const dd = datePart.substring(6, 8);
+
+                    const hh = timePart.substring(0, 2);
+                    const min = timePart.substring(2, 4);
+                    const ss = timePart.substring(4, 6);
+
+                    timestampStr = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+                }
+            }
+
+            const logContent = `Upload-Timestamp ${timestampStr}\n${this.originalFilename || 'Unknown Filename'}`;
+            const logPath = path.join(this.inputDir, 'convert.log');
+
+            fs.writeFileSync(logPath, logContent, 'utf8');
+            console.log(`Created convert.log at ${logPath}`);
+        } catch (e) {
+            console.error("Error creating convert.log:", e);
+            // Non-critical, so we continue
+        }
     }
 }
 

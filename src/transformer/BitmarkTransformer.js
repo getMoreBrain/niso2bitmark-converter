@@ -22,13 +22,12 @@ const { config } = require("mathjax-node");
 
 // Default configuration object
 const CONFIG = {
-  ressourceBaseUrl: "https://carulab.io:63108/uploads/",
-  uploadPostUrl: "https://carulab.io:63108/upload",
+  ressourceBaseUrl: "https://electrosuisse.getmorebrain.com/x-publisher/images/",
   localRessourcePath: "",
   lang: "de",
   featureFlagUseLatex: true,
   // htmlTable2PNG: new HtmlTable2PNG(), // Removed global instance
-  idMapper: new IDMapper("./idmapper.json"),
+  //idMapper: new IDMapper("./idmapper.json"),
 };
 
 const replace_txt_map = {
@@ -445,7 +444,7 @@ const inlineGraphicOld = (node, visitor) => {
     //const txt = processParagraph(node, visitor);
     uploadFilename =
       "inlineGraphic_" + uploadFilename.replace(/[./]/g, "-") + fileExtension;
-    Utils.uploadFile(filename, CONFIG.uploadPostUrl, uploadFilename);
+    Utils.publishImage(filename, uploadFilename);
     const url = CONFIG.ressourceBaseUrl + uploadFilename;
 
     fs.copyFileSync(filename, `./inlinegraphic/${href.replace("/", "_")}`);
@@ -1672,7 +1671,7 @@ function generateDisplayFormula(node) {
     new MML2SVG()
       .transform(data, filePath, 230, 230 / 1.618 / 2)
       .then((svgPath) => {
-        Utils.uploadFile(svgPath, CONFIG.uploadPostUrl, path.basename(svgPath));
+        Utils.publishImage(svgPath, path.basename(svgPath));
       });
   }
   return url;
@@ -2059,7 +2058,7 @@ class FigVisitor extends IVisitor {
         graphicNode.attributes["xlink:href"].replace("/", "_")
       );
       const url = CONFIG.ressourceBaseUrl + ressourceFileName;
-      Utils.uploadFile(graphicPath, CONFIG.uploadPostUrl, ressourceFileName);
+      Utils.publishImage(graphicPath, ressourceFileName);
       const size = getFigSize(fig_size);
       writeImageFigure(
         node,
@@ -2139,6 +2138,11 @@ class BoxedTextVisitor extends IVisitor {
 
     const labelNode = findFirstChild(node, "title");
     let label = labelNode ? labelNode.plaintext : "";
+    if (label.length > 0) {
+      label = node.label.length > 0 ? node.label + "/" + label : label; //
+    } else {
+      label = node.label; // overload from parent
+    }
     this.markVisited(labelNode);
     // es kann sein, dass TitleNode auch Index-Terme enthält
     // diese sollen auch im Parent-Node gespeichert werden
@@ -2760,8 +2764,9 @@ class BitmarkTransformer {
     this.htmlTable2PNG = null;
   }
   // Main transform function
-  transform(jsonFile, lang, ressourcePathP, outputPath, mapperPath, onProgress) {
+  transform(jsonFile, lang, ressourcePathP, outputPath, mapperPath, bookRegistryPath, onProgress, logger) {
     return new Promise((resolve, reject) => {
+      CONFIG.logger = logger;
       CONFIG.localRessourcePath = ressourcePathP.endsWith("/")
         ? ressourcePathP
         : ressourcePathP + "/";
@@ -2771,30 +2776,34 @@ class BitmarkTransformer {
       CONFIG.onProgress = onProgress;
 
       // Initialize HtmlTable2PNG with session-specific path
-      const sessionDir = path.dirname(jsonFile);
+      // Change: Use workDir instead of json dir for images as per requirement
+      // work/<sessionid>/<normid>/images
+      const workDir = path.dirname(outputPath);
 
-      onProgress('convert_to_bitmark', 0, null);
-      this.customerId2AnchorMapper = new MappingStore(mapperPath);
+      CONFIG.onProgress('convert_to_bitmark', 0, null);
+      this.customerId2AnchorMapper = new MappingStore(mapperPath); // CustomerId2AnchorMapper initialisieren  
       // Mapper initialisieren
-      this.docIdMapper = new XpublisherDocId2GmbDocMapper(mapperPath);
+      this.docIdMapper = new XpublisherDocId2GmbDocMapper(mapperPath, bookRegistryPath);
       this.docIdMapper.loadOverAllMappings();
 
       // lade specific mapping für dieses Dokument
-      this.docIdMapper.loadSpecificMapping(CONFIG.localRessourcePath);
+      this.docIdMapper.loadXPSDocId2GmbIdMapping(CONFIG.localRessourcePath);
 
       // Remove the output file if it exists
       if (fs.existsSync(this.outputPath)) {
         fs.unlinkSync(this.outputPath);
       }
-      // Remove "tmp" directory if it exists and create a new one
-      const tmpDir = path.join(sessionDir, "img");
-      if (fs.existsSync(tmpDir)) {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
+
+      // New image path: work/<sessionid>/<normid>/images
+      const imagesDir = path.join(workDir, "images");
+      if (fs.existsSync(imagesDir)) {
+        fs.rmSync(imagesDir, { recursive: true, force: true });
       }
-      fs.mkdirSync(tmpDir);
+      fs.mkdirSync(imagesDir, { recursive: true });
 
       this.htmlTable2PNG = new HtmlTable2PNG();
-      this.htmlTable2PNG.init(sessionDir);
+      // Pass workDir as the base (upload_file_list.txt will be there) and 'images' as the subfolder
+      this.htmlTable2PNG.init(workDir, 'images');
 
       this.otStream = fs.createWriteStream(this.outputPath);
       var initBookF = true;

@@ -40,7 +40,8 @@ class InlineGraphicBuilder {
         "inlineGraphic_" + uploadFilename.replace(/[./]/g, "-") + fileExtension;
 
       // Hochladen der Datei
-      Utils.uploadFile(filename, this.uploadUrl, uploadFilename);
+      // Hochladen der Datei -> Jetzt kopieren in public Ordner
+      Utils.publishImage(filename, uploadFilename);
       const url = this.ressourceBaseUrl + uploadFilename;
 
       return `==??==|imageInline:${url}|alignmentVertical:middle|size:line-height|`;

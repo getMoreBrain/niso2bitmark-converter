@@ -13,13 +13,13 @@ class XpublisherDocId2GmbDocMapper {
    * @param {string} baseDir - Basisverzeichnis, das rekursiv durchsucht werden soll
    * @param {string} outputJsonPath - Pfad zur JSON-Ausgabedatei
    */
-  constructor(baseDir, metadataFile) {
+  constructor(baseDir, bookregistryPath) {
     this.baseDir = baseDir;
     this.outputJsonPath = path.join(baseDir, "xpublisherDocId2GmbDocId.json");
     this.overAllIdMap = new Map(); // Map für xpublisherItemId -> gmbDocId Zuordnungen
     this.specificIdMap = new Map(); // Map für spezifische xpublisherItemId -> gmbDocId Zuordnungen
-    this.metadataFile = metadataFile; // Standardwert für gmb_metadata.json
-    this.metadataList = null; // Wird beim ersten Zugriff auf gmb_metadata.json geladen
+    this.bookregistryPath = bookregistryPath; // Standardwert für book_registry.json
+    this.bookregistry = null; // Wird beim ersten Zugriff auf book_registry.json geladen
   }
 
   /**
@@ -28,15 +28,14 @@ class XpublisherDocId2GmbDocMapper {
   fullScan() {
     console.log(`Starte Scanning von ${this.baseDir}...`);
     const startTime = Date.now();
-
+    this.loadBookRegistry();
     try {
       this.overAllIdMap = new Map();
       this.scanDirectory(this.baseDir, this.overAllIdMap);
 
       const elapsedSec = (Date.now() - startTime) / 1000;
       console.log(
-        `Scanning abgeschlossen. ${
-          this.overAllIdMap.size
+        `Scanning abgeschlossen. ${this.overAllIdMap.size
         } Mappings gefunden (${elapsedSec.toFixed(2)}s).`
       );
 
@@ -44,6 +43,7 @@ class XpublisherDocId2GmbDocMapper {
       this.saveOverAllMappingToJson();
     } catch (error) {
       console.error(`Fehler beim Scannen des Verzeichnisses: ${error.message}`);
+      throw error;
     }
   }
 
@@ -66,9 +66,90 @@ class XpublisherDocId2GmbDocMapper {
     }
   }
 
-  loadSpecificMapping(directoryPath) {
+  loadXPSDocId2GmbIdMapping(directoryPath) {
     this.specificIdMap = new Map();
     this.scanDirectory(directoryPath, this.specificIdMap);
+    console.log(
+      `Mappings aus ${directoryPath} geladen (${this.specificIdMap.size} Mappings).`
+    );
+  }
+
+  loadBookRegistry() {
+    if (!this.bookregistryPath) {
+      console.error("Kein bookregistryFile definiert.");
+      return;
+    }
+    if (!this.bookregistry) {
+      try {
+        let raw = fs.readFileSync(this.bookregistryPath, "utf8");
+        if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1);
+        this.bookregistry = JSON.parse(raw);
+      } catch (e) {
+        console.error(`Fehler beim Laden der Registry: ${e.message}`);
+        return;
+      }
+    }
+  }
+
+  /**
+   * Aktualisiert das Mapping für eine spezifische NormID (Buch).
+   * 1. Ermittelt die Gmb-DocId aus der Registry.
+   * 2. Löscht alle existierenden Mappings für diese Gmb-DocId.
+   * 3. Scannt das Verzeichnis des Buchs neu und fügt Mappings hinzu.
+   * @param {string} normId - Die zu aktualisierende NormID
+   */
+  mapXpsDocId2GmbId(normId) {
+    console.log(`Aktualisiere Mapping für NormID: ${normId}`);
+
+    // 0. Sicherstellen, dass Mappings geladen sind
+    if (this.overAllIdMap.size === 0) {
+      this.loadOverAllMappings();
+    }
+
+    // 1. Metadaten sicherstellen und Gmb-DocId ermitteln
+    this.loadBookRegistry();
+
+    if (!this.bookregistry || !this.bookregistry[normId]) {
+      console.error(`Keine Metadaten für NormID ${normId} gefunden.`);
+      return;
+    }
+
+    const gmbDocId = this.bookregistry[normId].gmbdocid;
+    if (!gmbDocId) {
+      console.error(`Keine Gmb-DocId für NormID ${normId} definiert.`);
+      return;
+    }
+
+    console.log(`Gmb-DocId für ${normId} ist: ${gmbDocId}`);
+
+    // 2. Löschen aller Einträge, die zu dieser Gmb-DocId gehören
+    let deletedCount = 0;
+    for (const [key, value] of this.overAllIdMap.entries()) {
+      if (value === gmbDocId) {
+        this.overAllIdMap.delete(key);
+        deletedCount++;
+      }
+    }
+    console.log(`${deletedCount} alte Mappings für ${gmbDocId} gelöscht.`);
+
+    // 3. Neu scannen
+    // Wir nehmen an, dass das Buch-Verzeichnis direkt unter baseDir liegt und so heißt wie die NormID
+    // Oder wir müssen suchen. Converter.js erstellt work/session/NormID.
+    // Wenn 'baseDir' = work/session ist, dann ist path.join(baseDir, normId) korrekt.
+
+    const bookDir = path.join(this.baseDir, normId);
+    if (!fs.existsSync(bookDir)) {
+      console.error(`Verzeichnis für Buch nicht gefunden: ${bookDir}`);
+      return;
+    }
+
+    console.log(`Scanne Verzeichnis: ${bookDir}`);
+    // Wir scannen in die overAllIdMap
+    this.scanDirectory(bookDir, this.overAllIdMap);
+
+    // 4. Speichern
+    this.saveOverAllMappingToJson();
+    console.log(`Mapping Aktualisierung für ${normId} abgeschlossen.`);
   }
 
   extractDocID(input) {
@@ -123,52 +204,47 @@ class XpublisherDocId2GmbDocMapper {
         }
       }
     } catch (error) {
-      console.error(`Fehler beim Scannen von ${dirPath}: ${error.message}`);
+      throw error;
     }
   }
 
   /**
-   * Liest die gmb_metadata.json Datei und gibt die enthaltenen Metadaten zurück
-   * @param {string} dirPath - Verzeichnispfad, in dem gmb_metadata.json liegt
+   * Liest die book_registry.json Datei und gibt die enthaltenen Metadaten zurück
+   * @param {string} dirPath - Verzeichnispfad, in dem book_registry.json liegt
    * @returns {Object} - Objekt mit den Metadaten (parse_type, lang, gmbdocid)
    */
-  readMetadata(nisoFilePath) {
-    try {
-      if (fs.existsSync(this.metadataFile)) {
-        let raw = fs.readFileSync(this.metadataFile, "utf8");
-
-        // BOM-Zeichen behandeln, falls vorhanden
-        if (raw.charCodeAt(0) === 0xfeff) {
-          raw = raw.slice(1);
-        }
-        if (!this.metadataList) {
-          this.metadataList = JSON.parse(raw);
-        }
-
-        const baseName = path.basename(nisoFilePath);
-        const metadata = this.metadataList[baseName];
-
-        // Objekt mit allen erforderlichen Eigenschaften zurückgeben
-        return {
-          parse_type: metadata.parse_type || "nin",
-          lang: metadata.lang || "de",
-          gmbdocid: metadata.gmbdocid || "",
-        };
-      }
-    } catch (error) {
-      console.error(
-        `#### Fehler beim Lesen der gmb_metadata.json in ${dirPath}:`,
-        error
-      );
+  readBookMetadata(normID) {
+    this.loadBookRegistry();
+    if (!this.bookregistry || !this.bookregistry[normID]) {
+      throw new Error(`Keine Metadaten für NormID ${normID} gefunden.`);
     }
+    const metadata = this.bookregistry[normID];
 
-    // Standardwerte zurückgeben, wenn Datei nicht existiert oder ein Fehler auftritt
+    // Objekt mit allen erforderlichen Eigenschaften zurückgeben
     return {
-      parse_type: "nin",
-      lang: "de",
-      gmbdocid: "",
+      parse_type: metadata.parse_type || "nin",
+      lang: metadata.lang || "de",
+      gmbdocid: metadata.gmbdocid || "",
     };
   }
+  /**
+   * Extrahiert den Inhalt des <name>-Tags aus einer metadata.xml Datei.
+   * @param {string} metadataPath - Pfad zur metadata.xml Datei.
+   * @returns {string} - Inhalt des <name>-Tags oder ein leerer String, falls nicht gefunden.
+   */
+  getNormName(metadataPath) {
+    try {
+      const metadataContent = fs.readFileSync(metadataPath, "utf-8");
+      const match = metadataContent.match(/<name>(.*?)<\/name>/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    } catch (error) {
+      throw error;
+    }
+    return "";
+  }
+
   /**
    * Verarbeitet die XML- und JSON-Dateien in einem Verzeichnis
    * @param {string} dirPath - Verzeichnis mit den Dateien
@@ -176,22 +252,22 @@ class XpublisherDocId2GmbDocMapper {
   processXmlFiles(dirPath, map) {
     try {
       const metadataPath = path.join(dirPath, "metadata.xml");
+      const normName = this.getNormName(metadataPath);
 
       // Lese metadata.xml
       const metadataContent = fs.readFileSync(metadataPath, "utf-8");
       const itemIds = this.extractItemIds(metadataContent);
 
       // Extrahiere den Basisordner durch Entfernen des letzten Verzeichnisnamens
-      const parentDirPath = path.dirname(dirPath);
-      const gmbMetadata = this.readMetadata(parentDirPath);
+      const gmbMetadata = this.readBookMetadata(normName);
       // Bestimme gmbDocId
       const gmbDocId = gmbMetadata.gmbdocid || "notdefined"; // Fallback auf "notdefined" falls gmbDocId nicht gefunden
 
       // Für jede itemId das Mapping zur gmbDocId hinzufügen
+      let itemCount = 0;
       for (const itemId of itemIds) {
+        itemCount++;
         if (
-          //this.overAllIdMap.has(itemId) &&
-          //this.overAllIdMap.get(itemId) !== gmbDocId
           map.has(itemId) &&
           map.get(itemId) !== gmbDocId
         ) {
@@ -199,9 +275,9 @@ class XpublisherDocId2GmbDocMapper {
             `Warnung: ItemID ${itemId} existiert bereits mit unterschiedlicher gmbDocId`
           );
         }
-        //this.overAllIdMap.set(itemId, gmbDocId);
         map.set(itemId, gmbDocId);
       }
+      console.log(`### XpublisherDocId2GmbDocMapper: Verarbeite file: ${normName} (${itemCount} itemIds) in ${metadataPath}`);
     } catch (error) {
       console.error(
         `Fehler bei der Verarbeitung von XML in ${dirPath}: ${error.message}`
@@ -232,8 +308,8 @@ class XpublisherDocId2GmbDocMapper {
   }
 
   /**
-   * Extrahiert die gmbDocId aus der gmb_metadata.json
-   * @param {string} jsonContent - Inhalt der gmb_metadata.json als String oder bereits geparst
+   * Extrahiert die gmbDocId aus der book_registry.json
+   * @param {string} jsonContent - Inhalt der book_registry.json als String oder bereits geparst
    * @returns {string} - Die gefundene gmbDocId oder "tbd" wenn nicht gefunden
    */
   extractGmbDocId(jsonContent) {

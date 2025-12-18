@@ -168,6 +168,12 @@
             "fr": "Publier",
             "it": "Pubblica"
         },
+        "btn_new_upload": {
+            "de": "Neuer Upload",
+            "en": "New Upload",
+            "fr": "Nouveau téléchargement",
+            "it": "Nuovo caricamento"
+        },
         "archive_title": {
             "de": "Versionshistorie",
             "en": "Version History",
@@ -245,6 +251,54 @@
             "en": "Rollback",
             "fr": "Restauration",
             "it": "Rollback"
+        },
+        "step_consistency": {
+            "de": "Konsistenzprüfung",
+            "en": "Consistency Check",
+            "fr": "Contrôle de cohérence",
+            "it": "Controllo coerenza"
+        },
+        "consistency_title": {
+            "de": "Konsistenzprüfung",
+            "en": "Consistency Check",
+            "fr": "Contrôle de cohérence",
+            "it": "Controllo coerenza"
+        },
+        "check_dead_links": {
+            "de": "Tote Links",
+            "en": "Dead Links",
+            "fr": "Liens morts",
+            "it": "Link morti"
+        },
+        "check_xml_validity": {
+            "de": "XML Validität",
+            "en": "XML Validity",
+            "fr": "Validité XML",
+            "it": "Validità XML"
+        },
+        "check_missing_images": {
+            "de": "Fehlende Bilder",
+            "en": "Missing Images",
+            "fr": "Images manquantes",
+            "it": "Immagini mancanti"
+        },
+        "status_pending": {
+            "de": "Ausstehend",
+            "en": "Pending",
+            "fr": "En attente",
+            "it": "In attesa"
+        },
+        "status_passed": {
+            "de": "Bestanden",
+            "en": "Passed",
+            "fr": "Réussi",
+            "it": "Superato"
+        },
+        "status_failed": {
+            "de": "Fehlgeschlagen",
+            "en": "Failed",
+            "fr": "Échoué",
+            "it": "Fallito"
         }
     },
     "infos": {
@@ -253,6 +307,12 @@
             "en": "Transformation finished.",
             "fr": "Transformation terminée.",
             "it": "Trasformazione completata."
+        },
+        "confirm_new_upload": {
+            "de": "Sind Sie sicher? Der aktuelle Prozess wird abgebrochen.",
+            "en": "Are you sure? The current process will be aborted.",
+            "fr": "Êtes-vous sûr ? Le processus actuel sera annulé.",
+            "it": "Sei sicuro? Il processo corrente verrà interrotto."
         },
         "upload_success": {
             "de": "Upload erfolgreich",
@@ -321,10 +381,10 @@
             "it": "Aggiornamento riferimenti documento: {count}%"
         },
         "img_upload": {
-            "de": "Bild-Upload: {count}",
-            "en": "Image upload: {count}",
-            "fr": "Upload d'image : {count}",
-            "it": "Caricamento immagine: {count}"
+            "de": "Bild Generierung: {count}",
+            "en": "Image generation: {count}",
+            "fr": "Génération d'image : {count}",
+            "it": "Generazione immagine: {count}"
         },
         "convert_to_bitmark": {
             "de": "Konvertierung zu Bitmark läuft...",
@@ -346,6 +406,12 @@
         }
     },
     "errors": {
+        "unexpected_error": {
+            "de": "Unerwarteter Fehler",
+            "en": "Unexpected error",
+            "fr": "Erreur inattendue",
+            "it": "Errore inaspettato"
+        },
         "network_error": {
             "de": "Netzwerkfehler",
             "en": "Network error",
@@ -419,10 +485,10 @@
             "it": "Impossibile trovare il tag <name> in metadata.xml."
         },
         "zip_error_normid_mismatch": {
-            "de": "NormID '{id}' aus metadata.xml ist ein unbekannte/nicht registrierte Norm",
-            "en": "NormID '{id}' found in metadata.xml is not in the registry.",
-            "fr": "La NormID '{id}' trouvée dans metadata.xml n'est pas dans le registre.",
-            "it": "NormID '{id}' trovato in metadata.xml non è nel registro."
+            "de": "NormID '{id}' aus metadata.xml ist ein unbekannte/nicht registrierte Norm (prüfen Sie <name> in metadata.xml).",
+            "en": "NormID '{id}' found in metadata.xml is not in the registry (check <name> in metadata.xml).",
+            "fr": "La NormID '{id}' trouvée dans metadata.xml n'est pas dans le registre (vérifiez <name> dans metadata.xml).",
+            "it": "NormID '{id}' trovato in metadata.xml non è nel registro (controllare <name> in metadata.xml)."
         },
         "no_file_uploaded": {
             "de": "Keine Datei hochgeladen.",

@@ -5,9 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "InitialFullMapping",
+            "program": "${workspaceFolder}/src/Customer2AnchorIdMappingsFullMapping.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "InitialLoad",
+            "program": "${workspaceFolder}/src/initialLoad.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "server.js",
             "skipFiles": [
                 "<node_internals>/**"
             ],

@@ -285,12 +285,12 @@ class HtmlTable2File {
   }
 
   // Initialisiert das Programm (Erstellt benötigte Verzeichnisse und Dateien)
-  init(sessionDir) {
+  init(sessionDir, imgDirName = 'img') {
     this.sessionDir = sessionDir;
-    this.imgDir = `${sessionDir}/img`;
+    this.imgDir = `${sessionDir}/${imgDirName}`;
     this.fileListPath = `${sessionDir}/upload_file_list.txt`;
     if (!fs.existsSync(this.imgDir)) {
-      fs.mkdirSync(this.imgDir);
+      fs.mkdirSync(this.imgDir, { recursive: true });
     }
     const dir = path.dirname(this.fileListPath);
     if (!fs.existsSync(dir)) {
@@ -378,6 +378,16 @@ class HtmlTable2File {
     const fileContent = fs.readFileSync(this.fileListPath, "utf-8");
     const lines = fileContent.split("\n").filter((line) => line.trim() !== "");
 
+    // Ensure public/images exists
+    // Relative to this file: ../../public/images ?? 
+    // Usually standard project structure: /home/ubuntu/dev/niso2bitmark-converter/public/images
+    // We can try to resolve it relative to __dirname (which is src/transformer)
+    // src/transformer -> .. -> src -> .. -> root -> public/images
+    const publicImagesDir = path.resolve(__dirname, "../../public/images");
+    if (!fs.existsSync(publicImagesDir)) {
+      fs.mkdirSync(publicImagesDir, { recursive: true });
+    }
+
     if (onProgress) {
       onProgress('img_upload', 0, { count: 0 });
     }
@@ -398,11 +408,11 @@ class HtmlTable2File {
         try {
           console.log(`Verarbeite Datei: ${trimmedInput}`);
           await this.convertHtmlToPng(trimmedInput, trimmedOutput);
-          Utils.uploadFile(
+          Utils.publishImage(
             trimmedOutput,
-            uploadUrl,
             path.basename(trimmedOutput)
-          ); // Optionaler Upload
+          ); // Ersetzt Upload und Copy
+
         } catch (error) {
           console.error(
             `Fehler bei der Verarbeitung von ${trimmedInput}:`,

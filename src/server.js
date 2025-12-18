@@ -7,11 +7,19 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const http = require('http');
 const Converter = require('./Converter');
+const { validateDeepZipStructure } = require('./transformer/utils');
 
 const app = express();
 const port = 3080;
 
-// Configuration
+// Broadcast helper
+const broadcast = (data) => {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+        }
+    });
+};
 const CONFIG_DIR = path.join(__dirname, '..', 'config');
 const UPLOAD_DIR = path.join(__dirname, '..', 'upload');
 const VERSION_DIR = path.join(__dirname, '..', 'versions');
@@ -39,22 +47,59 @@ ensureDirs();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve static files at /x-publisher/public/images/... mapping to public/images/...
+// Actually we can map /x-publisher/public to public
+app.use('/x-publisher/public', express.static(path.join(__dirname, '..', 'public')));
 
 // Create HTTP server for WebSocket integration
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
-// Broadcast helper
-const broadcast = (data) => {
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-        }
+const wss = new WebSocket.Server({ noServer: true });
+
+// Log upgrades & Handle manually for multiple paths
+server.on('upgrade', (request, socket, head) => {
+    // Robust URL parsing
+    let pathname = request.url;
+    try {
+        const baseURL = `http://${request.headers.host || 'localhost'}`;
+        const urlObj = new URL(request.url, baseURL);
+        pathname = urlObj.pathname;
+    } catch (e) {
+        console.error("Error parsing URL during upgrade:", e);
+    }
+
+    console.log(`[WS] Upgrade request: ${request.url} | Pathname: ${pathname} | Host: ${request.headers.host}`);
+    console.log(`[WS] Headers:`, JSON.stringify(request.headers, null, 2));
+
+    // Normalize path (remove trailing slash)
+    const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+
+    // Accept upgrade if path matches /api/ws or /x-publisher/api/ws
+    if (normalizedPath === '/api/ws' || normalizedPath === '/x-publisher/api/ws') {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request);
+        });
+    } else {
+        console.log(`[WS] Rejected upgrade for path: ${pathname}`);
+        socket.destroy();
+    }
+});
+
+// Heartbeat
+const interval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) return ws.terminate();
+        ws.isAlive = false;
+        ws.ping();
     });
-};
+}, 30000);
+
+wss.on('close', () => clearInterval(interval));
 
 wss.on('connection', (ws) => {
     console.log('Client connected');
+    ws.isAlive = true;
+    ws.on('pong', () => ws.isAlive = true);
     ws.on('close', () => console.log('Client disconnected'));
 });
 
@@ -74,6 +119,37 @@ const getRegistry = () => {
 
 // Global Lock for Transformation
 let activeTransformation = null;
+
+// Helper: Copy images to public/images
+const copyImagesToPublic = async (bookDir) => {
+    try {
+        const imagesDir = path.join(bookDir, 'images');
+        // Source 'images' might not exist if the book has no images
+        if (!await fs.pathExists(imagesDir)) return;
+
+        const publicImagesDir = path.join(__dirname, '..', 'public', 'images');
+        await fs.ensureDir(publicImagesDir);
+
+        const files = await fs.readdir(imagesDir);
+        for (const file of files) {
+            // "Sämtliche Files ausser die .html files"
+            if (file.toLowerCase().endsWith('.html')) continue;
+
+            const srcPath = path.join(imagesDir, file);
+            const destPath = path.join(publicImagesDir, file);
+
+            // Check if it is a file
+            const stat = await fs.stat(srcPath);
+            if (stat.isFile()) {
+                // "Files mit im Zielordner mit dem gleichen Namen sollen überschrieben werden"
+                await fs.copy(srcPath, destPath, { overwrite: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error copying images to public:", error);
+        throw new Error("Fehler beim Kopieren der Bilder nach public/images: " + error.message);
+    }
+};
 
 // --- Routes ---
 
@@ -116,6 +192,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+
 app.post('/api/transform', async (req, res) => {
     const { sessionID, filename, normID } = req.body;
 
@@ -148,7 +225,7 @@ app.post('/api/transform', async (req, res) => {
                 workDir: WORK_DIR,
                 uploadDir: UPLOAD_DIR
             };
-            const converter = new Converter(sessionID, normID, config, broadcast);
+            const converter = new Converter(sessionID, normID, config, broadcast, filename);
             await converter.start();
 
         } catch (error) {
@@ -189,74 +266,20 @@ app.post('/api/check-content', async (req, res) => {
         const zip = new AdmZip(uploadedFile);
         zip.extractAllTo(tempUnzipDir, true);
 
-        // b) Scan structure
-        // CLEANUP: Remove __MACOSX if it exists
-        await fs.remove(path.join(tempUnzipDir, '__MACOSX'));
-
-        // Helper to recursively find folders
-        const getDirs = async (dir) => {
-            const dirents = await fs.readdir(dir, { withFileTypes: true });
-            return dirents.filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
-        };
-
-        let rootFiles = await fs.readdir(tempUnzipDir);
-        let rootDirs = await getDirs(tempUnzipDir);
-
-        // Filter out system files/dirs from logic if needed, but __MACOSX is already gone
-        rootDirs = rootDirs.filter(d => d !== '__MACOSX');
-
-        // CHECK FOR WRAPPER
-        let searchDir = tempUnzipDir;
-        if (rootDirs.length === 1 && !rootDirs[0].toUpperCase().endsWith('_XML')) {
-            // It is a wrapper
-            searchDir = path.join(tempUnzipDir, rootDirs[0]);
-            // Update root lists from wrapper
-            rootDirs = await getDirs(searchDir);
-            // rootFiles not strictly needed unless we want to ensure no lose files up top
-        }
-
-        // c) Find Exactly one _XML dir
-        const xmlDirs = rootDirs.filter(d => d.toUpperCase().endsWith('_XML'));
-        if (xmlDirs.length !== 1) {
-            await fs.remove(sessionDir); // Cleanup
-            return res.status(400).json({
-                messageKey: "zip_error_xml_count",
-                message: "ZIP must contain exactly one directory ending in '_XML'."
-            });
-        }
-        const xmlDirName = xmlDirs[0];
-        const xmlDirPath = path.join(searchDir, xmlDirName);
-
-        // d) Find Exactly one inner dir
-        const innerDirs = await getDirs(xmlDirPath);
-        const filteredInner = innerDirs.filter(d => d !== '__MACOSX'); // just in case
-
-        if (filteredInner.length !== 1) {
+        // b) Validate Deep Structure (Zip -> Level1 -> Level2 -> Level3 -> Content)
+        let xmlDirPath;
+        try {
+            xmlDirPath = await validateDeepZipStructure(tempUnzipDir);
+        } catch (err) {
             await fs.remove(sessionDir);
             return res.status(400).json({
-                messageKey: "zip_error_inner_count",
-                params: { dir: xmlDirName },
-                message: `The directory '${xmlDirName}' must contain exactly one subdirectory.`
-            });
-        }
-        const innerDirName = filteredInner[0];
-        const innerDirPath = path.join(xmlDirPath, innerDirName);
-
-        // e) Check metadata.xml and content.xml
-        const hasMetadata = await fs.pathExists(path.join(innerDirPath, 'metadata.xml'));
-        const hasContent = await fs.pathExists(path.join(innerDirPath, 'content.xml'));
-
-        if (!hasMetadata || !hasContent) {
-            await fs.remove(sessionDir);
-            return res.status(400).json({
-                messageKey: "zip_error_missing_files",
-                params: { dir: innerDirName },
-                message: `Missing 'metadata.xml' or 'content.xml' in '${innerDirName}'.`
+                messageKey: "zip_structure_invalid",
+                message: err.message
             });
         }
 
         // f) Parse metadata for NormID
-        const metadataXml = await fs.readFile(path.join(innerDirPath, 'metadata.xml'), 'utf-8');
+        const metadataXml = await fs.readFile(path.join(xmlDirPath, 'metadata.xml'), 'utf-8');
         const nameMatch = metadataXml.match(/<name>(.*?)<\/name>/);
 
         if (!nameMatch || !nameMatch[1]) {
@@ -465,6 +488,32 @@ app.post('/api/release', async (req, res) => {
         const metaContent = `Timestamp: ${new Date().toISOString()}\nLabel: ${label || ''}\nReleaseNote: ${releaseNote}\nReleaser: ${releaseName}`;
         await fs.writeFile(path.join(currentDir, 'label.txt'), metaContent);
 
+        // 4. Cleanup Procedure
+        // Delete all directories in WORK_DIR and TMP_JSON_DIR except the current sessionID 
+        // (Note: sessionID was moved from WORK_DIR to currentDir, so WORK_DIR should be empty of this session anyway)
+        const cleanupDirectory = async (directory, keepId) => {
+            if (!fs.existsSync(directory)) return;
+            const items = await fs.readdir(directory);
+            for (const item of items) {
+                if (item === keepId) continue; // Keep the current session if present
+                // Also skip hidden files or special dirs if necessary, but request said "sämtliche Directories"
+                if (item.startsWith('.')) continue;
+
+                const itemPath = path.join(directory, item);
+                try {
+                    await fs.remove(itemPath);
+                } catch (e) {
+                    console.error(`Failed to cleanup ${itemPath}:`, e);
+                }
+            }
+        };
+
+        // Explicitly define TMP_JSON_DIR here or globally. Defining here for safety/locality as per legacy code style.
+        const TMP_JSON_DIR = path.join(__dirname, '..', 'tmp', 'json');
+
+        await cleanupDirectory(WORK_DIR, sessionID);
+        await cleanupDirectory(TMP_JSON_DIR, sessionID);
+
         res.json({ messageKey: "release_successful", message: "Release successful" });
 
     } catch (error) {
@@ -493,7 +542,12 @@ app.get('/api/versions', async (req, res) => {
                 try {
                     const stats = await fs.stat(itemPath);
                     if (stats.isDirectory()) {
-                        books.push(item);
+                        // Check if book directory contains a .bitmark file
+                        const bookFiles = await fs.readdir(itemPath);
+                        const hasBitmark = bookFiles.some(f => f.endsWith('.bitmark'));
+                        if (hasBitmark) {
+                            books.push(item);
+                        }
                     }
                 } catch (e) { }
             }
@@ -514,6 +568,7 @@ app.get('/api/versions', async (req, res) => {
         }
 
         // Check archive
+        const archiveVersions = [];
         if (fs.existsSync(archiveDir)) {
             const files = await fs.readdir(archiveDir);
             for (const file of files) {
@@ -525,7 +580,7 @@ app.get('/api/versions', async (req, res) => {
                         meta = await fs.readFile(path.join(verPath, 'label.txt'), 'utf-8');
                     }
                     const books = await getBooks(verPath);
-                    versions.push({
+                    archiveVersions.push({
                         type: 'archive',
                         id: file,
                         path: verPath,
@@ -535,6 +590,15 @@ app.get('/api/versions', async (req, res) => {
                 }
             }
         }
+
+        // Sort archive versions descending by ID (which contains timestamp)
+        archiveVersions.sort((a, b) => {
+            if (a.id < b.id) return 1;
+            if (a.id > b.id) return -1;
+            return 0;
+        });
+
+        versions.push(...archiveVersions);
 
         res.json(versions);
     } catch (error) {
@@ -587,6 +651,70 @@ app.post('/api/rollback', async (req, res) => {
     }
 });
 
+app.get('/api/download-session/:sessionID/:normID', async (req, res) => {
+    const { sessionID, normID } = req.params;
+    const sessionDir = path.join(WORK_DIR, sessionID);
+    const bookDir = path.join(sessionDir, normID);
+
+    if (!fs.existsSync(bookDir)) {
+        return res.status(404).send('Session or Book not found');
+    }
+
+    try {
+        // Find .bitmark file in the book directory
+        const files = await fs.readdir(bookDir);
+        const bitmarkFile = files.find(f => f.endsWith('.bitmark'));
+        const pdfFile = files.find(f => f.endsWith('.pdf'));
+
+        if (!bitmarkFile) {
+            return res.status(404).send('Bitmark file not found in book directory');
+        }
+
+        // Copy images to public/images before download
+        await copyImagesToPublic(bookDir);
+
+        const bitmarkPath = path.join(bookDir, bitmarkFile);
+        // Create a zip containing the .bitmark file, name zip after the NormID
+        const zip = new AdmZip();
+        zip.addLocalFile(bitmarkPath, '', bitmarkFile);
+        if (pdfFile) {
+            const pdfPath = path.join(bookDir, pdfFile);
+            zip.addLocalFile(pdfPath, '', pdfFile);
+        }
+        const zipBuffer = zip.toBuffer();
+        const zipName = `${normID}.zip`;
+        res.set('Content-Type', 'application/zip');
+        res.set('Content-Disposition', `attachment; filename=${zipName}`);
+        res.set('Content-Length', zipBuffer.length);
+        res.send(zipBuffer);
+
+    } catch (error) {
+        console.error("Session download error:", error);
+        // If it was our specific copy error, send that message, otherwise generic
+        res.status(500).json({
+            messageKey: "error_processing_request",
+            message: error.message || "Error processing request"
+        });
+    }
+});
+
+app.get('/api/consistency-report/:sessionID', async (req, res) => {
+    const { sessionID } = req.params;
+    const sessionDir = path.join(WORK_DIR, sessionID);
+    const reportPath = path.join(sessionDir, 'consistency_report.json');
+
+    if (fs.existsSync(reportPath)) {
+        try {
+            const report = await fs.readJson(reportPath);
+            res.json(report);
+        } catch (e) {
+            res.status(500).json({ messageKey: "unexpected_error", message: "Error reading report" });
+        }
+    } else {
+        res.json([]);
+    }
+});
+
 app.get('/api/download/:versionId/:bookName', async (req, res) => {
     const { versionId, bookName } = req.params;
     let targetDir;
@@ -616,6 +744,9 @@ app.get('/api/download/:versionId/:bookName', async (req, res) => {
             return res.status(404).send('Bitmark file not found in book directory');
         }
 
+        // Copy images to public/images before download
+        await copyImagesToPublic(bookPath);
+
         const bitmarkPath = path.join(bookPath, bitmarkFile);
         // Create a zip containing the .bitmark file, name zip after the NormID (bookName)
         const zip = new AdmZip();
@@ -632,7 +763,10 @@ app.get('/api/download/:versionId/:bookName', async (req, res) => {
         res.send(zipBuffer);
 
     } catch (error) {
-        res.status(500).json({ messageKey: "error_processing_request", message: "Error processing request" });
+        res.status(500).json({
+            messageKey: "error_processing_request",
+            message: error.message || "Error processing request"
+        });
     }
 });
 
