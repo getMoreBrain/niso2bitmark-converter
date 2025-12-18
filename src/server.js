@@ -12,6 +12,25 @@ const { validateDeepZipStructure } = require('./transformer/utils');
 const app = express();
 const port = 3080;
 
+// Redirect console logs to file
+const logStream = fs.createWriteStream(path.join(__dirname, '..', 'server.log'), { flags: 'a' });
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = function (...args) {
+    const timestamp = new Date().toISOString();
+    const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+    logStream.write(`[${timestamp}] [INFO] ${msg}\n`);
+    originalLog.apply(console, args);
+};
+
+console.error = function (...args) {
+    const timestamp = new Date().toISOString();
+    const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+    logStream.write(`[${timestamp}] [ERROR] ${msg}\n`);
+    originalError.apply(console, args);
+};
+
 // Broadcast helper
 const broadcast = (data) => {
     wss.clients.forEach(client => {
@@ -58,6 +77,7 @@ const wss = new WebSocket.Server({ noServer: true });
 
 // Log upgrades & Handle manually for multiple paths
 server.on('upgrade', (request, socket, head) => {
+    console.log(`[WS] Upgrade on upgrade: ${request.url}`);
     // Robust URL parsing
     let pathname = request.url;
     try {
@@ -77,6 +97,7 @@ server.on('upgrade', (request, socket, head) => {
     // Accept upgrade if path matches /api/ws or /x-publisher/api/ws
     if (normalizedPath === '/api/ws' || normalizedPath === '/x-publisher/api/ws') {
         wss.handleUpgrade(request, socket, head, (ws) => {
+            console.log(`[WS] Accepted upgrade for path: ${pathname}`);
             wss.emit('connection', ws, request);
         });
     } else {
