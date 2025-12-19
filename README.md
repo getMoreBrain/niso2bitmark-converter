@@ -166,8 +166,9 @@ All modules located in `src/transformer/`:
 │   ├── book_registry.json  # Whitelist of valid Book IDs (NormIDs)
 │   └── messages.json       # Localization strings (i18n)
 ├── public/                 # Frontend assets (HTML, CSS, JS)
-│   ├── index.html
-│   └── style.css
+│   ├── images/             # Static images
+│   ├── index.html          # Main HTML file
+│   └── style.css           # Main CSS file
 ├── src/                    # Source Code
 │   ├── server.js           # Main Server
 │   ├── Converter.js        # Transformation Manager
@@ -229,7 +230,7 @@ Start the application using PM2 instead of directly with `node`.
 cd /home/ubuntu/dev/niso2bitmark-converter
 # --name gives the process a readable name
 pm2 start src/server.js --name "niso2bitmark"
-pm2 start src/log_pm2_status.js --name "niso2bitmark-pm2-monitor" --> writes status to server.log every 5 minutes + Log Rotation
+pm2 start src/log_pm2_status.js --name "niso2bitmark-pm2-monitor" --> writes status to server.log every 5 minutes + Log Rotation + File Housekeeping
 ```
 
 #### 3. Auto-Restart on Crash
@@ -263,7 +264,18 @@ pm2 restart niso2bitmark-pm2-monitor
 ```
 
 
-### 6. Book Registry
+## Housekeeping
+The application includes an automated housekeeping function to manage disk space by cleaning up old temporary files.
+
+*   **Trigger**: The housekeeping logic is implemented in `src/log_pm2_status.js` (`performHousekeeping`), which is executed and kept alive by **PM2** (process name: `niso2bitmark-pm2-monitor`).
+*   **Schedule**: The script runs continuously and checks every 5 minutes. The actual cleanup process is triggered **once daily between 02:00 and 03:00**.
+*   **Functionality**:
+    *   **Work Directories** (`work/`): Recurringly deletes session directories older than **60 hours**.
+    *   **Uploads** (`upload/`): Deletes uploaded `.zip` files older than **60 hours**.
+    *   **Images** (`public/images/`): Deletes files older than **160 hours**.
+*   **Logging**: All housekeeping activities (start, deleted files, errors) are logged to `server.log`.
+
+## Book Registry
 ```json
 {
   "411000_2025_de": {
