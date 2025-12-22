@@ -1409,6 +1409,7 @@ class SecVisitor extends IVisitor {
       processIndexTerms(node, titleNode, this);
       title = processParagraph(titleNode, this);
       this.markVisited(titleNode);
+      title = title.trim();
     }
 
     // It may be that TitleNode also contains index terms

@@ -41,7 +41,7 @@ const IMAGES_DIR = path.join(__dirname, '..', 'public', 'images');
 
 const HOURS_WORK = 60;
 const HOURS_UPLOAD = 60;
-const HOURS_IMAGES = 160;
+const HOURS_IMAGES = 720;
 
 let lastHousekeepingDate = null;
 

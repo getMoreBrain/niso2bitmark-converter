@@ -175,6 +175,8 @@ function maskClosingBrackets(text) {
 
 function chapter(level, label, text, anchor = "", searchCSV, lang = "de") {
   const levelstr = "#".repeat(level);
+  label = !label || label === null ? "" : label.trim();
+  text = !text || text === null ? "" : text.trim();
   return addAnchorAndCustomerIdAndTags(tChapter, anchor, lang)
     .replace("£{label}", maskClosingBrackets(label))
     .replace("£{text}", maskClosingBrackets(text))
@@ -196,6 +198,8 @@ function imageInline(url, width, height) {
 }
 
 function book(title, subtitle = "") {
+  title = !title || title === null ? "" : title.trim();
+  subtitle = !subtitle || subtitle === null ? "" : subtitle.trim();
   return tBook.replace("£{title}", title).replace("£{subtitle}", subtitle);
 }
 
@@ -258,8 +262,8 @@ function articleTxt(
   showLeadAsInstruction = false,
   lang = "de"
 ) {
-  label = !label || label === null ? "" : label;
-  lead = !lead || lead === null ? "" : lead;
+  label = !label || label === null ? "" : label.trim();
+  lead = !lead || lead === null ? "" : lead.trim();
   text = !text || text === null ? "" : text;
   anchor = !anchor || anchor === null ? "" : anchor;
   searchCSV = !searchCSV || searchCSV === null ? "" : searchCSV;
@@ -294,8 +298,8 @@ function instructionTag(label = "") {
 }
 
 function itemLeadTag(item = "", lead = "") {
-  item = !item || item === null ? "" : item;
-  lead = !lead || lead === null ? "" : lead;
+  item = !item || item === null ? "" : item.trim();
+  lead = !lead || lead === null ? "" : lead.trim();
 
   if (lead.length > 0) {
     lead = "[%" + maskClosingBrackets(lead) + "]"; // add the lead
@@ -321,11 +325,11 @@ function articleTableTxt(
   template = "",
   lang = "de"
 ) {
-  label = !label || label === null ? "" : label;
-  caption = !caption || caption === null ? "" : caption;
+  label = !label || label === null ? "" : label.trim();
+  caption = !caption || caption === null ? "" : caption.trim();
   anchor = !anchor || anchor === null ? "" : anchor;
   rawTxt = !rawTxt || rawTxt === null ? "" : rawTxt;
-  title = !title || title === null ? "" : title;
+  title = !title || title === null ? "" : title.trim();
 
   let bm = addAnchorAndCustomerIdAndTags(template, anchor, lang)
     .replace("£{url}", url)
