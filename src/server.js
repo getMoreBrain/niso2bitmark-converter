@@ -246,7 +246,18 @@ app.post('/api/transform', async (req, res) => {
                 workDir: WORK_DIR,
                 uploadDir: UPLOAD_DIR
             };
-            const converter = new Converter(sessionID, normID, config, broadcast, filename);
+
+            // Check if PDF exists in the input directory (sessionDir/normID)
+            const inputDir = path.join(sessionDir, normID);
+            let hasPdf = false;
+            try {
+                if (fs.existsSync(inputDir)) {
+                    const files = await fs.readdir(inputDir);
+                    hasPdf = files.some(f => f.toLowerCase().endsWith('.pdf'));
+                }
+            } catch (e) { console.warn("Error checking PDF in transform:", e); }
+
+            const converter = new Converter(sessionID, normID, config, broadcast, filename, { hasPdf });
             await converter.start();
 
         } catch (error) {
@@ -352,17 +363,25 @@ app.post('/api/check-content', async (req, res) => {
         await fs.move(xmlDirPath, finalXmlPath);
 
         // Check for PDF in tempUnzipDir and move to bookDir
+        let pdfFound = false;
         try {
             const findPdf = async (dir) => {
                 const entries = await fs.readdir(dir);
+                // Check files first
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry);
+                    const stat = await fs.stat(fullPath);
+                    if (stat.isFile() && entry.toLowerCase().endsWith('.pdf')) {
+                        return fullPath;
+                    }
+                }
+                // Then recurse into directories
                 for (const entry of entries) {
                     const fullPath = path.join(dir, entry);
                     const stat = await fs.stat(fullPath);
                     if (stat.isDirectory()) {
                         const found = await findPdf(fullPath);
                         if (found) return found;
-                    } else if (entry.toLowerCase().endsWith('.pdf')) {
-                        return fullPath;
                     }
                 }
                 return null;
@@ -372,6 +391,7 @@ app.post('/api/check-content', async (req, res) => {
             if (pdfPath) {
                 const destPdfPath = path.join(bookDir, path.basename(pdfPath));
                 await fs.move(pdfPath, destPdfPath, { overwrite: true });
+                pdfFound = true;
             }
         } catch (err) {
             console.warn("Error moving PDF:", err);
@@ -380,25 +400,37 @@ app.post('/api/check-content', async (req, res) => {
         // Cleanup temp
         await fs.remove(tempUnzipDir);
 
-        // Copy content from current versions if exists (Update Base) - ORIGINAL LOGIC PRESERVED
+        // Copy content from current versions if exists (Update Base)
+        // We exclude the directory of the currently processed book to ensure a clean state (deleting old PDFs etc)
         const currentVersionDir = path.join(VERSION_DIR, 'current');
         if (fs.existsSync(currentVersionDir)) {
-            // We only want to copy stuff that is NOT the book we just processed?
-            // Or do we copy everything into sessionDir?
-            // The original logic was: copy entire currentVersionDir to sessionDir.
-            // Then unzip ON TOP.
-            // NOW: We are selective.
-            // Let's copy everything from 'current' to 'sessionDir', EXCEPT the book we just uploaded.
-            // Actually simplest is copy all, then overwrite with our new bookDir.
-            await fs.copy(currentVersionDir, sessionDir, { overwrite: false });
+            const excludedBookPath = path.join(currentVersionDir, matchedKey);
+
+            await fs.copy(currentVersionDir, sessionDir, {
+                overwrite: false,
+                filter: (src, dest) => {
+                    // Prevent copying the old version of the current book
+                    if (src === excludedBookPath) {
+                        return false;
+                    }
+                    return true;
+                }
+            });
         }
 
-        // Return Success with NormID
-        res.json({
+        // Prepare response
+        const response = {
             messageKey: "content_check_success",
             message: "Content check passed",
             normID: matchedKey
-        });
+        };
+
+        if (!pdfFound) {
+            response.warningKey = "warning_no_pdf_found";
+        }
+
+        // Return Success with NormID
+        res.json(response);
 
     } catch (error) {
         console.error("Content check error:", error);
@@ -509,7 +541,25 @@ app.post('/api/release', async (req, res) => {
         await fs.move(sessionDir, currentDir, { overwrite: true });
 
         // 3. Meta
-        const metaContent = `Timestamp: ${new Date().toISOString()}\nLabel: ${label || ''}\nReleaseNote: ${releaseNote}\nReleaser: ${releaseName}`;
+        let metaContent = `Timestamp: ${new Date().toISOString()}\nLabel: ${label || ''}\nReleaseNote: ${releaseNote}\nReleaser: ${releaseName}`;
+
+        // Check for PDF warnings in books
+        try {
+            const items = await fs.readdir(currentDir);
+            for (const item of items) {
+                const itemPath = path.join(currentDir, item);
+                if ((await fs.stat(itemPath)).isDirectory() && !item.startsWith('.')) {
+                    const logPath = path.join(itemPath, 'convert.log');
+                    if (fs.existsSync(logPath)) {
+                        const logData = await fs.readFile(logPath, 'utf8');
+                        if (logData.includes('WARNING: No PDF file found in upload')) {
+                            metaContent += `\nWARNING: No PDF file found for ${item}`;
+                        }
+                    }
+                }
+            }
+        } catch (e) { console.warn("Error checking for warnings for label.txt:", e); }
+
         await fs.writeFile(path.join(currentDir, 'label.txt'), metaContent);
 
         // 4. Cleanup Procedure

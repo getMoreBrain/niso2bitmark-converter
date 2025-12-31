@@ -34,6 +34,55 @@ async function validateDeepZipStructure(startDir, twoLevelCheckOnly = false) {
             .map(d => d.name);
     };
 
+    // Check for Variant 2: Root contains a .zip file (and likely a PDF)
+    // Structure: Root -> [File.zip] -> (extract) -> One Folder -> {metadata.xml, content.xml}
+    const allFiles = await fs.readdir(startDir);
+    const innerZipName = allFiles.find(name => name.toLowerCase().endsWith('.zip') && !name.startsWith('.'));
+
+    if (innerZipName) {
+        // Variant 2 Detected
+        const AdmZip = require('adm-zip');
+        const innerZipPath = path.join(startDir, innerZipName);
+        const innerExtractDir = path.join(startDir, '__inner_zip_extracted');
+        await fs.ensureDir(innerExtractDir);
+
+        try {
+            const zip = new AdmZip(innerZipPath);
+            zip.extractAllTo(innerExtractDir, true);
+        } catch (e) {
+            const err = new Error(`Variant 2 Validation Failed: Could not extract inner zip '${innerZipName}'.`);
+            err.key = 'zip_val_inner_extract_failed';
+            err.params = { zipName: innerZipName };
+            throw err;
+        }
+
+        const innerDirs = await getDirs(innerExtractDir);
+        if (innerDirs.length !== 1) {
+            const err = new Error(`Variant 2 Validation Failed: Inner zip '${innerZipName}' must contain exactly one directory (found ${innerDirs.length}).`);
+            err.key = 'zip_val_inner_structure_dirs';
+            err.params = { zipName: innerZipName, count: innerDirs.length };
+            throw err;
+        }
+
+        const contentDir = path.join(innerExtractDir, innerDirs[0]);
+
+        // Check Content
+        if (!fs.existsSync(path.join(contentDir, 'content.xml'))) {
+            const err = new Error(`Variant 2 Validation Failed: Directory '${innerDirs[0]}' inside '${innerZipName}' is missing 'content.xml'.`);
+            err.key = 'zip_val_inner_missing_content';
+            err.params = { dir: innerDirs[0], zipName: innerZipName };
+            throw err;
+        }
+        if (!fs.existsSync(path.join(contentDir, 'metadata.xml'))) {
+            const err = new Error(`Variant 2 Validation Failed: Directory '${innerDirs[0]}' inside '${innerZipName}' is missing 'metadata.xml'.`);
+            err.key = 'zip_val_inner_missing_metadata';
+            err.params = { dir: innerDirs[0], zipName: innerZipName };
+            throw err;
+        }
+
+        return contentDir;
+    }
+
     let rootDir = null;
     if (!twoLevelCheckOnly) {
         // Level 1: Zip Root -> Level 1 Dir

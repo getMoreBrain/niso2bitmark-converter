@@ -11,16 +11,30 @@ Der **Niso2Bitmark Converter** transformiert Buchdaten aus dem NISO-XML-Format i
 Bevor Sie mit dem Upload beginnen, müssen die Quelldaten korrekt vorbereitet sein. Die ZIP-Datei muss einer strikten Verzeichnisstruktur folgen.
 
 ### Aufbau der ZIP-Datei
-Verpacken Sie Ihre Daten in ein ZIP-Archiv, das folgende Struktur aufweist:
+Das System unterstützt zwei verschiedene Strukturen für den Upload.
 
+**Variante 1: Verschachtelte Struktur (Deep Structure)**
+Die klassische Struktur mit mehreren Ordnerebenen:
 ```text
 Name_der_ZIP_Datei.zip/
-└── Ebene_1_Ordner/               (Hauptordner z.B. 491000_2025_de: Beliebiger Name )
-    |── Ebene_2_XML-Ordner/       (z.B. SNG_491000_XML)
-    |   └── Ebene_3_Ordner/       (z.B. 0001-COO.6505.1000.15.4669235)
-    |       ├── metadata.xml      <-- PFLICHT: Enthält die Norm-ID (<name>)
-    |       └── content.xml       <-- PFLICHT: Enthält den eigentlichen Buchinhalt (XML)
-    └── PDF-Datei)
+└── Ebene_1_Ordner/               (z.B. 491000_2025_de)
+    └── Ebene_2_XML-Ordner/       (z.B. SNG_491000_XML)
+        └── Ebene_3_Ordner/       (z.B. 0001-COO.6505.1000.15.4669235)
+            ├── metadata.xml      <-- PFLICHT: Enthält die Norm-ID (<name>)
+            └── content.xml       <-- PFLICHT: Enthält den eigentlichen Buchinhalt (XML)
+└── PDF-Datei (optional, irgendwo im ZIP)
+```
+
+**Variante 2: Flache Struktur (Container)**
+Eine vereinfachte Struktur, die oft als Export-Container verwendet wird:
+```text
+Container_Upload.zip/
+├── Ein_PDF_File.pdf              (z.B. SNG_491000_2025-08_fr_PDF.pdf)
+└── Eine_Inhalts_ZIP_Datei.zip    (z.B. SNG_491000_2025-08_fr_XML.zip)
+    └── (Entpackt)
+        └── Einziger_Ordner/      (z.B. 0001-COO.6505.1000.13.4794398)
+            ├── metadata.xml
+            └── content.xml
 ```
 
 **Wichtige Hinweise:**

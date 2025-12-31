@@ -15,7 +15,7 @@ class Converter {
      * @param {function} broadcast - Callback (data) => void for WebSocket status updates
      * @param {string} originalFilename - The original name of the uploaded zip file
      */
-    constructor(sessionID, normID, config, broadcast, originalFilename) {
+    constructor(sessionID, normID, config, broadcast, originalFilename, options = {}) {
         this.sessionID = sessionID;
         this.normID = normID;
         this.workDir = path.join(config.workDir, sessionID);
@@ -24,6 +24,7 @@ class Converter {
         this.broadcast = broadcast;
         this.config = config;
         this.originalFilename = originalFilename;
+        this.options = options;
     }
 
     async start(skipIfNoGmbId = false) {
@@ -233,7 +234,13 @@ class Converter {
                 }
             }
 
-            const logContent = `Upload-Timestamp ${timestampStr}\n${this.originalFilename || 'Unknown Filename'}`;
+            let logContent = `Upload-Timestamp ${timestampStr}\n${this.originalFilename || 'Unknown Filename'}`;
+
+            // Log Warning if no PDF
+            if (this.options && this.options.hasPdf === false) {
+                logContent += `\nWARNING: No PDF file found in upload.`;
+            }
+
             const logPath = path.join(this.inputDir, 'convert.log');
 
             fs.writeFileSync(logPath, logContent, 'utf8');

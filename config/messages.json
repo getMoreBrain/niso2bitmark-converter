@@ -646,11 +646,55 @@
             "fr": "Échec validation : 'content.xml' manquant dans '{dir}'.",
             "it": "Validazione fallita: 'content.xml' mancante in '{dir}'."
         },
+        "zip_structure_invalid": {
+            "de": "ZIP Struktur ist ungültig.",
+            "en": "ZIP structure is invalid.",
+            "fr": "La structure ZIP est invalide.",
+            "it": "La struttura ZIP non è valida."
+        },
         "zip_val_missing_metadata": {
             "de": "Validierung fehlgeschlagen: '{dir}' fehlt 'metadata.xml'.",
             "en": "Validation Failed: '{dir}' is missing 'metadata.xml'.",
             "fr": "Échec validation : 'metadata.xml' manquant dans '{dir}'.",
             "it": "Validazione fallita: 'metadata.xml' mancante in '{dir}'."
+        },
+        "zip_val_inner_extract_failed": {
+            "de": "Validierung Variante 2 fehlgeschlagen: Konnte inneres ZIP '{zipName}' nicht entpacken.",
+            "en": "Variant 2 Validation Failed: Could not extract inner zip '{zipName}'.",
+            "fr": "Échec validation variante 2 : Impossible d'extraire le zip interne '{zipName}'.",
+            "it": "Validazione variante 2 fallita: Impossibile estrarre lo zip interno '{zipName}'."
+        },
+        "zip_val_inner_structure_dirs": {
+            "de": "Validierung Variante 2 fehlgeschlagen: Inneres ZIP '{zipName}' muss genau ein Verzeichnis enthalten (gefunden {count}).",
+            "en": "Variant 2 Validation Failed: Inner zip '{zipName}' must contain exactly one directory (found {count}).",
+            "fr": "Échec validation variante 2 : Le zip interne '{zipName}' doit contenir exactement un répertoire (trouvé {count}).",
+            "it": "Validazione variante 2 fallita: Lo zip interno '{zipName}' deve contenere esattamente una directory (trovato {count})."
+        },
+        "zip_val_inner_missing_content": {
+            "de": "Validierung Variante 2 fehlgeschlagen: Verzeichnis '{dir}' in '{zipName}' fehlt 'content.xml'.",
+            "en": "Variant 2 Validation Failed: Directory '{dir}' inside '{zipName}' is missing 'content.xml'.",
+            "fr": "Échec validation variante 2 : 'content.xml' manquant dans le répertoire '{dir}' de '{zipName}'.",
+            "it": "Validazione variante 2 fallita: 'content.xml' mancante nella cartella '{dir}' di '{zipName}'."
+        },
+        "zip_val_inner_missing_metadata": {
+            "de": "Validierung Variante 2 fehlgeschlagen: Verzeichnis '{dir}' in '{zipName}' fehlt 'metadata.xml'.",
+            "en": "Variant 2 Validation Failed: Directory '{dir}' inside '{zipName}' is missing 'metadata.xml'.",
+            "fr": "Échec validation variante 2 : 'metadata.xml' manquant dans le répertoire '{dir}' de '{zipName}'.",
+            "it": "Validazione variante 2 fallita: 'metadata.xml' mancante nella cartella '{dir}' di '{zipName}'."
+        }
+    },
+    "warnings": {
+        "warning_no_pdf_found": {
+            "de": "Achtung: Kein zugehöriges PDF-File vorhanden.",
+            "en": "Attention: No associated PDF file found.",
+            "fr": "Attention : Aucun fichier PDF associé trouvé.",
+            "it": "Attenzione: Nessun file PDF associato trovato."
+        },
+        "label_no_pdf": {
+            "de": "(kein PDF vorhanden)",
+            "en": "(no PDF found)",
+            "fr": "(aucun PDF trouvé)",
+            "it": "(nessun PDF trovato)"
         }
     }
 }

@@ -28,16 +28,28 @@ The application offers the following core functionalities:
     -   File is uploaded to `upload/`.
     -   Extracted to a temporary session directory in `work/<sessionID>/`.
     -   **Validation**:
-    -   **Validation**: The ZIP file must adhere to the following deep directory structure (3 levels):
+    -   **Validation**: The ZIP file must adhere to one of the following structures:
+        
+        **Variant 1 (Deep Structure)**:
         ```text
         Zero.zip/
         └── Level_1_Folder/
             └── Level_2_Folder/ (SNG_491000_XML)
             │    └── Level_3_Folder/ (0001-COO.6505.1000.15.4669235)
-            │    │   ├── metadata.xml <-- must contain a valid `<name>` (NormID) that exists in `config/book_registry.json`
-            │    │   └── content.xml  <-- must contain the XML-content of the book
-            │    └──metadata.xml (not relevant)
+            │    │   ├── metadata.xml
+            │    │   └── content.xml
             └── PDF-File (optional)
+        ```
+
+        **Variant 2 (Container Structure)**:
+        ```text
+        Upload.zip/
+        ├── My_Book.pdf
+        └── My_XML_Content.zip
+            └── (extracts to single folder)
+                └── Inner_Folder/ (0001-COO.6505.1000.15.4669235)
+                     ├── metadata.xml
+                     └── content.xml
         ```
     -   **Asset Handling**: If a PDF is found in the ZIP, it is moved to the book directory.
 

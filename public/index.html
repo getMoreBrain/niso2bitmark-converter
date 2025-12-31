@@ -381,6 +381,7 @@
             if (i18n.ui && i18n.ui[key]) text = i18n.ui[key][currentLang];
             else if (i18n.errors && i18n.errors[key]) text = i18n.errors[key][currentLang];
             else if (i18n.infos && i18n.infos[key]) text = i18n.infos[key][currentLang];
+            else if (i18n.warnings && i18n.warnings[key]) text = i18n.warnings[key][currentLang];
             else text = key; // Fallback
 
             // Params replacement
@@ -814,10 +815,25 @@
                 if (res.ok) {
                     // Update NormID from server
                     sessionData.normID = data.normID;
-                    document.getElementById('normid-value').innerText = data.normID;
+                    const normDisplay = document.getElementById('normid-value');
+                    normDisplay.innerText = data.normID;
+
                     document.getElementById('normid-display').classList.remove('opacity-0');
 
-                    showToast(t('check_success'), 'success');
+                    if (data.warningKey) {
+                        // Show warning but proceed
+                        showToast(t(data.warningKey), 'warning');
+
+                        // Add hint to title if specific warning
+                        if (data.warningKey === 'warning_no_pdf_found') {
+                            const span = document.createElement('span');
+                            span.className = 'text-sm font-normal text-yellow-500 ml-2';
+                            span.innerText = t('label_no_pdf');
+                            normDisplay.appendChild(span);
+                        }
+                    } else {
+                        showToast(t('check_success'), 'success');
+                    }
                     setTimeout(() => goToStep(3), 1000);
                 } else {
                     let msg = data.message;
@@ -1201,10 +1217,11 @@
         function showToast(msg, type = 'info') {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
-            toast.classList.remove('hidden', 'translate-y-20', 'opacity-0', 'bg-red-500', 'bg-green-500', 'bg-gray-800');
+            toast.classList.remove('hidden', 'translate-y-20', 'opacity-0', 'bg-red-500', 'bg-green-500', 'bg-yellow-500', 'bg-gray-800');
 
             if (type === 'error') toast.classList.add('bg-red-500');
             else if (type === 'success') toast.classList.add('bg-green-500');
+            else if (type === 'warning') toast.classList.add('bg-yellow-500');
             else toast.classList.add('bg-gray-800');
 
             // Slide in
