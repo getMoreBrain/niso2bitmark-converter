@@ -298,6 +298,7 @@ const footnote = (xrefFnNode, parentNode, visitor) => {
   if (bitmark && rid) {
     return bitmark;
   } else {
+    CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UndefinedFootNote", rid);
     return `!! Undefined footnote !!`;
   }
 };
@@ -387,7 +388,7 @@ const external_link = (node, visitor) => {
       );
     }
     if (!anchorId) {
-      CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoAnchorId", "href: " + href);
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoAnchorId(self)", "href: " + href);
     }
     return formatInternalLink(txt, anchorId);
   } else if (href.includes("fscxeditor://xeditordocument/")) {
@@ -426,6 +427,7 @@ const external_link = (node, visitor) => {
       bitmark = ` ==${txt}==|xref:${gmbDocId}|►${gmbAnchor}|`;
     }
   } else {
+    CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "linkNoMappigUndefined", "customerId: " + node.customerId);
     bitmark = ` ==${txt}==|xref:|►undef`;
   }
 
@@ -441,34 +443,19 @@ const inlineGraphic = (node, visitor) => {
   return bmInlineGraphicBuilder.build(node);
 };
 
-const inlineGraphicOld = (node, visitor) => {
-  try {
-    const href = node.attributes["xlink:href"];
-    const filename = CONFIG.localRessourcePath + href;
-    const fileExtension = href.substring(href.lastIndexOf(".")); // e.g. .png
-    let uploadFilename = href.substring(0, href.length - fileExtension.length);
-    //const txt = processParagraph(node, visitor);
-    uploadFilename =
-      "inlineGraphic_" + uploadFilename.replace(/[./]/g, "-") + fileExtension;
-    Utils.publishImage(filename, uploadFilename);
-    const url = CONFIG.ressourceBaseUrl + uploadFilename;
-
-    fs.copyFileSync(filename, `./inlinegraphic/${href.replace("/", "_")}`);
-
-    return `\n|image:${url}|@width:25|\n`;
-  } catch (error) {
-
-    return "!! Error processing inline graphic !!";
-  }
-};
-
 const getAnchorAndCustomerId = (node, visitor) => {
   if (node.overloadAnchorId || node.overloadCustomerId) {
     // overloadAnchorId and overloadCustomerId are used for sec_type_paragraph
+    if (!node.overloadAnchorId || !node.overloadCustomerId) {
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "NoCustomerId(overload)", "overloadAnchorId: " + node.overloadAnchorId);
+    }
     return [
       node.overloadAnchorId ? node.overloadAnchorId : "no_anchorId",
       node.overloadCustomerId ? node.overloadCustomerId : "no_customerId",
     ];
+  }
+  if (!node.customerId) {
+    CONFIG.logger.warn(TransformerLogger.CATEGORY.LINK, "NoCustomerId", "anchorId: " + node.anchorId);
   }
   return [node.anchorId, node.customerId ? node.customerId : "no_customerId"];
 };
@@ -566,12 +553,15 @@ function processParagraphRecursion(
       const url = generateDisplayFormula(child);
       paragraphTextByRef.text = paragraphTextByRef.text.concat(url);
     } else if (child.name === "table-wrap") {
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "TableWrapInParagraph", child.customerId);
       " !!" + child.name + ": " + child.plaintext + "!! ";
     } else if (child.name === "fig") {
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "FigInParagraph", child.customerId);
       paragraphTextByRef.text = paragraphTextByRef.text.concat(
         " !!" + child.name + ": " + child.plaintext + "!! "
       );
     } else if (child.name === "boxed-text") {
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "BoxedTextInParagraph", child.customerId);
       " !!" + child.name + ": " + child.plaintext + "!! ";
     } else if (child.name === "inline-formula") {
       const url = generateDisplayFormula(child);
@@ -647,7 +637,7 @@ function processParagraphRecursion(
       const ref = internal_link(child, visitor);
       paragraphTextByRef.text = paragraphTextByRef.text.concat(ref);
     } else {
-
+      CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInParagraph", child.customerId);
       paragraphTextByRef.text = paragraphTextByRef.text.concat(
         " !!" + child.name + ": " + child.plaintext + "!! "
       );
@@ -865,7 +855,7 @@ function processTermSecSplitted(termSecNode, visitor, currentPath) {
           processNode(n, visitor, currentPath);
         }
       } else {
-
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInTermSec", termSecNode.customerId);
         termDisplTxt =
           termDisplTxt + "!! UNKNOWN TermSec Splitted " + termEl.name + "!!";
       }
@@ -901,7 +891,7 @@ function processTermSec(termSecNode, visitor) {
           }
         }
       } else {
-
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInTermSec", termSecNode.customerId);
         termDisplTxt =
           termDisplTxt + "!! UNKNOWN TermSec " + termEl.name + "!!";
       }
@@ -970,7 +960,7 @@ function processRefList(refListNode, visitor) {
         stdRef = processParagraph(refItemChild, visitor, 2);
         refItemTxt = refItemTxt + stdRef;
       } else {
-
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInRefList", refListNode.customerId);
         refItemTxt =
           refItemTxt + "!! UNKNOWN RefList " + refItemChild.name + "!!";
       }
@@ -1077,7 +1067,7 @@ function processDefList(defListNode, visitor) {
           }
         }
       } else {
-
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInDefList", defListNode.customerId);
         defTxt += "!! UNKNOWN DefList " + el.name + "!!";
       }
     }
@@ -1133,7 +1123,7 @@ function processDefListInline(defListNode, visitor) {
       } else if (el.name === "inline-graphic") {
         defItemTxt = defItemTxt + inlineGraphic(el, visitor);
       } else {
-
+        CONFIG.logger.warn(TransformerLogger.CATEGORY.CONTENT, "UnknownElementInDefList", defListNode.customerId);
         defItemTxt = defItemTxt + "!! UNKNOWN DefList " + el.name + "!!";
       }
     }

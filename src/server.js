@@ -293,10 +293,13 @@ app.post('/api/check-content', async (req, res) => {
             xmlDirPath = await validateDeepZipStructure(tempUnzipDir);
         } catch (err) {
             await fs.remove(sessionDir);
-            return res.status(400).json({
-                messageKey: "zip_structure_invalid",
+            const response = {
+                messageKey: err.key || "zip_structure_invalid",
                 message: err.message
-            });
+            };
+            if (err.params) response.params = err.params;
+
+            return res.status(400).json(response);
         }
 
         // f) Parse metadata for NormID

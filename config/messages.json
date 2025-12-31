@@ -621,6 +621,36 @@
             "en": "Error generating zip.",
             "fr": "Erreur lors de la génération du fichier ZIP.",
             "it": "Errore durante la generazione del file ZIP."
+        },
+        "zip_val_level_1": {
+            "de": "Validierung Level 1 fehlgeschlagen: ZIP-Root muss genau ein Verzeichnis enthalten (gefunden {count}: {names}).",
+            "en": "Validation Level 1 Failed: ZIP root must contain exactly one directory (found {count}: {names}).",
+            "fr": "Échec validation niveau 1 : La racine ZIP doit contenir exactement un répertoire (trouvé {count} : {names}).",
+            "it": "Validazione livello 1 fallita: La radice ZIP deve contenere esattamente una directory (trovato {count}: {names})."
+        },
+        "zip_val_level_2": {
+            "de": "Validierung Level 2 fehlgeschlagen: Verzeichnis '{dir}' muss genau ein Unterverzeichnis enthalten.",
+            "en": "Validation Level 2 Failed: Directory '{dir}' must contain exactly one subdirectory.",
+            "fr": "Échec validation niveau 2 : Le répertoire '{dir}' doit contenir exactement un sous-répertoire.",
+            "it": "Validazione livello 2 fallita: La cartella '{dir}' deve contenere esattamente una sottocartella."
+        },
+        "zip_val_level_3": {
+            "de": "Validierung Level 3 fehlgeschlagen: Verzeichnis '{dir}' muss genau ein Unterverzeichnis enthalten.",
+            "en": "Validation Level 3 Failed: Directory '{dir}' must contain exactly one subdirectory.",
+            "fr": "Échec validation niveau 3 : Le répertoire '{dir}' doit contenir exactement un sous-répertoire.",
+            "it": "Validazione livello 3 fallita: La cartella '{dir}' deve contenere esattamente una sottocartella."
+        },
+        "zip_val_missing_content": {
+            "de": "Validierung fehlgeschlagen: '{dir}' fehlt 'content.xml'.",
+            "en": "Validation Failed: '{dir}' is missing 'content.xml'.",
+            "fr": "Échec validation : 'content.xml' manquant dans '{dir}'.",
+            "it": "Validazione fallita: 'content.xml' mancante in '{dir}'."
+        },
+        "zip_val_missing_metadata": {
+            "de": "Validierung fehlgeschlagen: '{dir}' fehlt 'metadata.xml'.",
+            "en": "Validation Failed: '{dir}' is missing 'metadata.xml'.",
+            "fr": "Échec validation : 'metadata.xml' manquant dans '{dir}'.",
+            "it": "Validazione fallita: 'metadata.xml' mancante in '{dir}'."
         }
     }
 }

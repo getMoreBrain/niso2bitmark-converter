@@ -508,13 +508,46 @@
 
         function resetState() {
             sessionData = { sessionID: null, filename: null, normID: null };
+
+            // Step 1: Upload
             document.getElementById('upload-status').innerHTML = '';
             document.getElementById('upload-status').classList.add('hidden');
+            document.getElementById('upload-progress').classList.add('hidden');
+
+            // Step 2: Content Check
+            const checkProgress = document.getElementById('check-progress');
+            checkProgress.classList.add('hidden');
+            // Reset to spinner
+            checkProgress.innerHTML = `
+                <div class="flex justify-center mb-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+                <p class="text-gray-300" data-i18n="check_progress">${t('check_progress')}</p>
+            `;
+
+            // Step 3: Transform
             document.getElementById('progress-bar').style.width = '0%';
             document.getElementById('current-book').innerText = '';
             document.getElementById('transform-idle').classList.remove('hidden');
             document.getElementById('transform-progress').classList.add('hidden');
-            // document.getElementById('preview-code').innerText = ''; // Removed
+            const progressText = document.getElementById('progress-text');
+            progressText.innerText = 'Initializing...';
+            progressText.classList.add('animate-pulse');
+
+            // Step 4: Consistency Check
+            document.getElementById('report-stats').innerHTML = '<div class="text-gray-400">Lade Bericht...</div>';
+            document.getElementById('report-list').innerHTML = '';
+            document.getElementById('btn-download-csv').classList.add('hidden');
+            document.getElementById('btn-download-bitmark').classList.add('hidden');
+
+            const btnNext = document.getElementById('btn-next-step');
+            if (btnNext) {
+                btnNext.disabled = false;
+                btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnNext.title = "";
+            }
+
+            // Step 5: Release
             document.getElementById('release-note').value = '';
             document.getElementById('release-name').value = '';
             // document.getElementById('release-confirm').checked = false;
@@ -753,6 +786,15 @@
         // Step 2: Content Check
         async function checkContent() {
             const progressDiv = document.getElementById('check-progress');
+
+            // Reset to spinner immediately to prevent flash of old error
+            progressDiv.innerHTML = `
+                <div class="flex justify-center mb-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+                <p class="text-gray-300" data-i18n="check_progress">${t('check_progress')}</p>
+            `;
+
             progressDiv.classList.remove('hidden');
 
             try {

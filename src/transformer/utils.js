@@ -39,7 +39,10 @@ async function validateDeepZipStructure(startDir, twoLevelCheckOnly = false) {
         // Level 1: Zip Root -> Level 1 Dir
         let dirs = await getDirs(startDir);
         if (dirs.length !== 1) {
-            throw new Error(`Validation Level 1 Failed: ZIP root must contain exactly one directory (found ${dirs.length}: ${dirs.join(', ')}).`);
+            const err = new Error(`Validation Level 1 Failed: ZIP root must contain exactly one directory (found ${dirs.length}: ${dirs.join(', ')}).`);
+            err.key = 'zip_val_level_1';
+            err.params = { count: dirs.length, names: dirs.join(', ') };
+            throw err;
         }
         rootDir = path.join(startDir, dirs[0]);
     } else {
@@ -49,23 +52,35 @@ async function validateDeepZipStructure(startDir, twoLevelCheckOnly = false) {
     // Level 2: Level 1 -> Level 2 Dir
     let dirs = await getDirs(rootDir);
     if (dirs.length !== 1) {
-        throw new Error(`Validation Level 2 Failed: Directory '${path.basename(rootDir)}' must contain exactly one subdirectory.`);
+        const err = new Error(`Validation Level 2 Failed: Directory '${path.basename(rootDir)}' must contain exactly one subdirectory.`);
+        err.key = 'zip_val_level_2';
+        err.params = { dir: path.basename(rootDir) };
+        throw err;
     }
     const level2Dir = path.join(rootDir, dirs[0]);
 
     // Level 3: Level 2 -> Level 3 Dir
     dirs = await getDirs(level2Dir);
     if (dirs.length !== 1) {
-        throw new Error(`Validation Level 3 Failed: Directory '${path.basename(level2Dir)}' must contain exactly one subdirectory.`);
+        const err = new Error(`Validation Level 3 Failed: Directory '${path.basename(level2Dir)}' must contain exactly one subdirectory.`);
+        err.key = 'zip_val_level_3';
+        err.params = { dir: path.basename(level2Dir) };
+        throw err;
     }
     const level3Dir = path.join(level2Dir, dirs[0]);
 
     // Check Content
     if (!fs.existsSync(path.join(level3Dir, 'content.xml'))) {
-        throw new Error(`Validation Failed: '${path.basename(level3Dir)}' is missing 'content.xml'.`);
+        const err = new Error(`Validation Failed: '${path.basename(level3Dir)}' is missing 'content.xml'.`);
+        err.key = 'zip_val_missing_content';
+        err.params = { dir: path.basename(level3Dir) };
+        throw err;
     }
     if (!fs.existsSync(path.join(level3Dir, 'metadata.xml'))) {
-        throw new Error(`Validation Failed: '${path.basename(level3Dir)}' is missing 'metadata.xml'.`);
+        const err = new Error(`Validation Failed: '${path.basename(level3Dir)}' is missing 'metadata.xml'.`);
+        err.key = 'zip_val_missing_metadata';
+        err.params = { dir: path.basename(level3Dir) };
+        throw err;
     }
 
     return level3Dir;

@@ -590,7 +590,7 @@ function eliminateMultipleSpaces(text, node, logger) {
   result = result.replace(/(\S) {4,}(?=\S)/g, "$1 ");
   const diff = text.length - result.length;
   if (diff > 4) {
-    logger.warn(TransformerLogger.CATEGORY.CONTENT, "eliminateMultipleSpaces", "count: " + diff + ": " + node.customerId);
+    logger.info(TransformerLogger.CATEGORY.CONTENT, "eliminateMultipleSpaces", "count: " + diff + ": " + node.customerId);
   }
   return result;
 }
